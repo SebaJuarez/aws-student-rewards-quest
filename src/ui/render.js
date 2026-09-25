@@ -6,6 +6,7 @@ import {renderRoadmap} from './views/roadmap.js';
 import {renderStreaks} from './views/streaks.js';
 import {renderTimeline} from './views/timeline.js';
 import {renderRewards} from './views/rewards.js';
+import {renderSources} from './views/sources.js';
 
 export function render(){
   const s=getState();
@@ -17,4 +18,5 @@ export function render(){
   renderStreaks(view);
   renderTimeline(view);
   renderRewards(view);
+  renderSources();
 }
