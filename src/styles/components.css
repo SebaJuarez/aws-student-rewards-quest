@@ -1,0 +1,73 @@
+/* today's quest */
+.quest-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px}
+.quest-item{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-bottom:1px solid var(--border-soft)}
+.quest-item:last-child{border-bottom:0}
+.qmark{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--faint);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px}
+.qmark.risk{border-color:var(--red);color:var(--red)}
+.qmark.go{border-color:var(--accent);color:var(--accent)}
+.quest-item .txt{font-size:14px}
+.quest-item .why{font-size:12px;color:var(--dim);margin-top:2px}
+.quest-empty{color:var(--dim);font-size:14px}
+
+/* roadmap */
+.phase{margin-bottom:22px}
+.phase-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.phase-head .dot{width:8px;height:8px;border-radius:50%;background:var(--locked)}
+.phase-head .dot.done{background:var(--green)}
+.phase-head .dot.live{background:var(--accent)}
+.phase-head .name{font-weight:600;font-size:14px}
+.phase-head .count{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
+.badge-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-left:3px solid var(--locked);background:var(--card);border-radius:6px;margin-bottom:6px;text-align:left;width:100%;color:var(--text)}
+.badge-row:hover{background:var(--card-hi);border-color:var(--faint)}
+.badge-row.completed{border-left-color:var(--green)}
+.badge-row.active{border-left-color:var(--accent)}
+.badge-row .num{font-family:var(--mono);font-size:11px;color:var(--faint);width:22px;flex-shrink:0}
+.badge-row .name{font-size:14px;font-weight:500;flex:1;min-width:0}
+.badge-row .meta{font-size:11.5px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+.status-pill{font-family:var(--mono);font-size:10.5px;padding:3px 7px;border-radius:99px;white-space:nowrap}
+.status-pill.completed{background:var(--green-soft);color:var(--green)}
+.status-pill.active{background:var(--accent-soft);color:var(--accent)}
+.status-pill.not_started{background:var(--bg2);color:var(--faint)}
+
+/* streaks */
+.streak-grid{display:grid;gap:12px}
+.streak-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px}
+.streak-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
+.streak-top .name{font-weight:600;font-size:14px}
+.streak-top .nums{font-family:var(--mono);font-size:13px;color:var(--dim)}
+.streak-sub{display:flex;justify-content:space-between;font-size:11.5px;color:var(--faint);font-family:var(--mono);margin-top:6px}
+.risk-flag{color:var(--red);font-size:12px;margin-top:8px;font-family:var(--mono)}
+.streak-actions{display:flex;gap:8px;margin-top:12px}
+.btn{border:1px solid var(--border);background:var(--bg2);color:var(--text);padding:7px 12px;border-radius:6px;font-size:12.5px;font-family:var(--mono)}
+.btn:hover{border-color:var(--faint)}
+.btn.primary{background:var(--accent-soft);border-color:var(--accent-dim);color:var(--accent)}
+.btn.danger{color:var(--red);border-color:rgba(240,96,90,.3)}
+
+/* timeline */
+.timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tl-step{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center}
+.tl-step.now{border-color:var(--accent-dim);background:var(--accent-soft)}
+.tl-step .d{font-family:var(--mono);font-size:11px;color:var(--faint)}
+.tl-step .lab{font-weight:600;font-size:13px;margin-top:4px}
+
+/* rewards */
+.reward-grid{display:grid;gap:10px}
+.reward-row{display:flex;align-items:center;gap:14px;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px}
+.reward-row.reached{border-color:rgba(63,185,80,.35)}
+.reward-row .rn{font-family:var(--mono);font-size:13px;width:54px;color:var(--dim)}
+.reward-row.reached .rn{color:var(--green)}
+.reward-row .rt{font-size:13.5px;flex:1}
+.reward-note{font-size:11.5px;color:var(--faint);margin-top:8px}
+
+/* sources */
+.source-list{display:grid;gap:8px}
+.source-row{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.source-row .st{font-size:13.5px;font-weight:500}
+.source-row .sa{font-size:12px;color:var(--dim);margin-top:2px}
+.tag{font-family:var(--mono);font-size:10px;text-transform:uppercase;letter-spacing:.05em;padding:3px 7px;border-radius:4px;white-space:nowrap}
+.tag.official{background:var(--green-soft);color:var(--green)}
+.tag.community{background:var(--accent-soft);color:var(--accent)}
+.method p{font-size:13.5px;color:var(--dim);margin:0 0 8px}
+.method ul{margin:0;padding-left:18px;font-size:13.5px;color:var(--dim)}
+.method li{margin-bottom:4px}
+.disclaimer{margin-top:26px;padding:14px;border:1px dashed var(--border);border-radius:8px;font-size:12px;color:var(--faint)}

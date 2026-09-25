@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AWS Student Rewards Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./src/styles/tokens.css">
+<link rel="stylesheet" href="./src/styles/base.css">
+<link rel="stylesheet" href="./src/styles/layout.css">
+<link rel="stylesheet" href="./src/styles/components.css">
+<link rel="stylesheet" href="./src/styles/overlays.css">
+<link rel="stylesheet" href="./src/styles/responsive.css">
+</head>
+<body>
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">
+      <div class="mark">Q</div>
+      <div><div class="t1">AWS Student Rewards Quest</div><div class="t2">community tracker · v1</div></div>
+    </div>
+    <div class="top-actions">
+      <div class="mode-toggle" role="group" aria-label="View mode">
+        <button id="modePersonal" class="active">Personal</button><button id="modeCommunity">Community</button>
+      </div>
+      <button class="icon-btn" id="btnExport" aria-label="Export progress">↓ Export</button>
+      <button class="icon-btn" id="btnImport" aria-label="Import progress">↑ Import</button>
+      <input type="file" id="fileImport" accept="application/json" style="display:none">
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div id="demoBanner"></div>
+  <section class="hero">
+    <h1>21 badges. 90 days. One roadmap.</h1>
+    <p class="sub">A community-built tracker for AWS Builder Center's Student Rewards program — not an official AWS product.</p>
+    <div class="progress-row">
+      <svg class="ring" viewBox="0 0 100 100" id="ringSvg" aria-hidden="true"></svg>
+      <div>
+        <div class="bar-outer"><div class="bar-inner" id="barInner" style="width:0%"></div></div>
+        <div class="stat-line"><span id="progressLabel">0 / 21 badges</span><span id="progressPct">0%</span></div>
+        <div class="chips">
+          <div class="chip"><div class="k">Level</div><div class="v" id="chipLevel">—</div></div>
+          <div class="chip"><div class="k">Next milestone</div><div class="v" id="chipMilestone">—</div></div>
+          <div class="chip"><div class="k">Day</div><div class="v" id="chipDay">—</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Today's Quest</h2>
+    <div class="quest-card" id="questCard"></div>
+  </section>
+
+  <section class="block">
+    <h2>Roadmap <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— recommended path, not an official AWS sequence</span></h2>
+    <div id="roadmap"></div>
+  </section>
+
+  <section class="block">
+    <h2>Streaks</h2>
+    <div class="streak-grid" id="streaks"></div>
+  </section>
+
+  <section class="block">
+    <h2>90-Day Timeline</h2>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <section class="block">
+    <h2>Reward Tracker</h2>
+    <div class="reward-grid" id="rewards"></div>
+    <div class="reward-note">Reward descriptions reflect current AWS Student Rewards information and may change — verify on AWS Builder Center before redeeming.</div>
+  </section>
+
+  <section class="block">
+    <h2>Sources &amp; Methodology</h2>
+    <div class="method">
+      <p>This roadmap synthesizes, in original wording, the publicly available guidance below. It does not copy article text or images.</p>
+      <ul>
+        <li>The AWS News Blog announcement is the primary official source for the program's existence and reward tiers (7 / 14 / 21 badges).</li>
+        <li>Community Builder Center posts were used to consolidate a practical, day-by-day interpretation of the 21 badges.</li>
+        <li>Badge requirements below are summarized, not quoted, and are labeled by source type.</li>
+        <li>Phase ordering is a recommended workflow — AWS has not published an official required sequence.</li>
+        <li>Anything not explicitly confirmed by AWS is marked "Verification needed" rather than assumed.</li>
+      </ul>
+    </div>
+    <div class="source-list" id="sources" style="margin-top:14px"></div>
+    <div class="disclaimer">Not affiliated with or endorsed by Amazon Web Services. "AWS Student Rewards Quest" is an independent, community-built roadmap and tracker based on publicly available AWS Builder Center guidance. Export your data anytime — everything lives in your browser's local storage.
+      <div style="margin-top:10px"><button class="btn danger" id="btnReset">Reset progress</button></div>
+    </div>
+  </section>
+</main>
+
+<div class="overlay" id="overlay"></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Badge detail"></aside>
+<div class="toast" id="toast"></div>
+</body>
+</html>

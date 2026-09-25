@@ -1,0 +1,6 @@
+@media(max-width:640px){
+  .progress-row{grid-template-columns:1fr}
+  .ring{margin:0 auto}
+  .timeline{grid-template-columns:repeat(2,1fr)}
+  .brand .t2{display:none}
+}
