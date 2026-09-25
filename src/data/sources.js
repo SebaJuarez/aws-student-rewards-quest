@@ -1,0 +1,10 @@
+export const SOURCES=[
+ {id:'s1',title:'AWS Weekly Roundup: Student Rewards on AWS Builder Center',author:'Esra Kayabali (AWS)',url:'https://aws.amazon.com/blogs/aws/aws-weekly-roundup-student-rewards-on-aws-builder-center-local-zone-in-las-vegas-and-more-august-24-2026/',pub:'2026-08-24',upd:'2026-09-10',type:'official'},
+ {id:'s2',title:'The Complete Roadmap to All 21 AWS Builder Center Badges',author:'Ashvin MK',url:'https://builder.aws.com/content/3JJRhS6Hfh0Sf2ssvZLpQKai0xY/the-complete-roadmap-to-all-21-aws-builder-center-badges',pub:'2026-09-14',type:'community'},
+ {id:'s3',title:'AWS Student Rewards: The Smartest 90-Day Roadmap to All 21 Badges',author:'Ganesh Sai Ram',url:'https://builder.aws.com/content/3Irac92ywiqexT7fKsMKgQ9MUCa/aws-student-rewards-the-smartest-90-day-roadmap-to-all-21-aws-builder-center-badges',pub:'2026-09-04',type:'community'},
+ {id:'s4',title:'How to Redeem Your AWS Student Rewards After Earning Badges',author:'Pedro Henrique Louback Campos',url:'https://builder.aws.com/content/3JJmpRm4EkdQsDuYCdvcfQZ3yWb/how-to-redeem-your-aws-student-rewards-after-earning-badges',pub:'2026-09-14',type:'community'},
+ {id:'s5',title:'AWS Student Rewards FAQ: Everything Students Need to Know',author:'Ganesh Sai Ram',url:'https://builder.aws.com/content/3IjMzYIfkn9T4WCLGzlYkFHmhEl/aws-student-rewards-faq-everything-students-need-to-know-before-they-start',pub:'2026-09-01',type:'community'},
+ {id:'s6',title:'How to Earn All 21 AWS Student Rewards Badges: A Complete Roadmap',author:'Krishna Patil',url:'https://builder.aws.com/content/3IXG7jxTel6lhXzAaWvQIg6ym02/how-to-earn-all-21-aws-student-rewards-badges-a-complete-roadmap',pub:'2026-08-28',type:'community'},
+ {id:'s7',title:'The AWS Builder Center Quest: 21 Badges, 3 Reward Tiers, 1 Certification Voucher',author:'Ahmed',url:'https://builder.aws.com/content/3IVnk2BQc0wycvB6gkcGBKBom24/the-aws-builder-center-quest-21-badges-3-reward-tiers-1-certification-voucher-lets-go',pub:'2026-08-27',type:'community'},
+];
+export const COMMUNITY_SRC=['s2','s3','s5','s6','s7'];
