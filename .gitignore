@@ -1,0 +1,50 @@
+# ---- OS ----
+.DS_Store
+Thumbs.db
+
+# ---- Editors ----
+.vscode/
+.idea/
+*.swp
+
+# ---- Node (only relevant if/when you add a build step, e.g. Vite) ----
+node_modules/
+dist/
+build/
+.vite/
+*.log
+npm-debug.log*
+
+# ---- Env / secrets (never commit these, especially with MCP tokens inside) ----
+.env
+.env.*
+!.env.example
+
+# ---- AI coding agents: local runtime state, caches and machine-specific config ----
+# Keep AGENTS.md tracked (it's the shared project context, meant to be committed).
+# Ignore everything else that's local, generated, or may contain credentials.
+
+# opencode
+.opencode/
+opencode.local.json
+
+# Claude Code
+.claude/
+CLAUDE.local.md
+
+# Cursor
+.cursor/
+.cursorrules.local
+
+# Generic MCP server configs / credentials some tools drop at the project root
+.mcp.json
+mcp.local.json
+*.mcp-credentials.json
+
+# Skills caches some agent CLIs keep per-project
+.skills-cache/
+.agent-cache/
+
+# ---- Misc local scratch ----
+*.local
+/tmp/
