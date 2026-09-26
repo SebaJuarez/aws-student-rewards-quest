@@ -121,3 +121,9 @@ export function weekDiff(a,b){
   if(ta===null||tb===null)return null;
   return daysBetween(ta,tb)/7;
 }
+
+// Sunday (ISO week end) of a "YYYY-Www" key — used for weekly-window deadlines.
+export function weekEndDate(w){
+  const thu=weekThursday(normWeekKey(w));
+  return thu===null?null:addDays(thu,3);
+}

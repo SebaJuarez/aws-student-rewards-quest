@@ -6,7 +6,7 @@ import {fileURLToPath,pathToFileURL} from 'node:url';
 
 import {
   addDays,addWeeks,daysBetween,formatDate,formatMonth,isWeekKey,isValidDateStr,
-  normWeekKey,parseLocalDate,todayStr,weekDiff,weekKeyOf,weekdayIndex
+  normWeekKey,parseLocalDate,todayStr,weekDiff,weekEndDate,weekKeyOf,weekdayIndex
 } from '../src/domain/dates.js';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -107,6 +107,14 @@ test('addWeeks and weekDiff work across year boundaries',()=>{
   assert.equal(weekDiff('2026-W39','2026-W41'),2);
   assert.equal(weekDiff('2026-W40','2026-W39'),-1);
   assert.equal(weekDiff('2026-W01','2026-W01'),0);
+});
+
+test('weekEndDate lands on the ISO week Sunday',()=>{
+  assert.equal(weekEndDate('2026-W39'),'2026-09-27');
+  assert.equal(weekEndDate('2026-W40'),'2026-10-04');
+  assert.equal(weekEndDate('2026-W01'),'2026-01-04');
+  assert.equal(weekEndDate('2026-W03'),'2026-01-18');
+  assert.equal(weekEndDate('nope'),null);
 });
 
 test('timezone: helpers behave the same under a non-UTC zone',(t)=>{

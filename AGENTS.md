@@ -29,8 +29,9 @@ or rewards.
     summary, 90-day heatmap), `store.js` (the **only**
     module allowed to touch `localStorage`), `status.js` (`statusOf` / `completedCount`),
     `progress.js` (level / milestone / day selectors + `timelineModel`, the single source of
-    journey dates), `quest.js` (Today's Quest
-    suggestions).
+    journey dates) + `rewardProgress()` (next reward, gap, projected milestone date),
+    `quest.js` (the deterministic Today's Quest rule engine: prioritized actions and
+    at-risk detection).
   - `src/ui/` — `render.js` (orchestrator), `views/` (one file per page section), `drawer.js`,
     `toast.js`, `events.js` (all DOM event wiring lives here).
   - `src/styles/` — `tokens.css` (design tokens), `base.css`, `layout.css`, `components.css`,
@@ -145,8 +146,9 @@ log cannot know — `longest` records and legacy `weeks` that predate day-level 
 ### 4.1 Streak and week rules (the domain's source of truth)
 
 All of this lives in `src/domain/dates.js` (date/week primitives),
-`src/domain/activity.js` (pure transitions + derived views) and
-`src/domain/activityLog.js` (log normalization, run/week rebuilds, Activity-section models).
+`src/domain/activity.js` (pure transitions + derived views),
+`src/domain/activityLog.js` (log normalization, run/week rebuilds, Activity-section models) and
+`src/domain/quest.js` (the rule engine: prioritized actions, at-risk detection).
 `store.js` only persists what those functions return; nothing in `src/ui/` may re-derive any
 of it.
 
@@ -177,6 +179,21 @@ of it.
   timeline may read — views must not compute day windows, milestone dates or week columns
   themselves. Heatmap cells are `<button>`s with a full `aria-label`; red is reserved for
   lost/risk, green for done, orange rings for milestones.
+- **Today's Quest engine**: `getNextBestActions(state, today)` (`quest.js`) ranks rule-based
+  actions through fixed `PRIORITY` tiers — daily streak at risk (100) → long-runway start of an
+  unstarted 90-day family (90) → weekly window still open (80) → one-time quick win (70) →
+  community goal (60) — deduped by id, stably sorted, capped at `MAX_ACTIONS` (5). Each action
+  carries WHAT/WHY/TIME/AFFECTS (`title`, `description`, `estimatedMinutes`, `deadline`,
+  `relatedBadges`) plus the personal `status`, the AWS `requirement` paraphrase and
+  `basis:'recommended'`: copy must never speak as an AWS mandate (tests enforce this).
+  `getAtRiskItems(state, today)` returns only objective exposure — a live daily run not logged
+  today (deadline = today) and a live weekly run whose current week is open (deadline = the
+  coming Sunday via `weekEndDate()` in `dates.js`) — never "not started": nothing can be lost
+  yet. `rewardProgress(state, today)` (`progress.js`) feeds the quest summary line: next
+  reward, badges to go, and the earliest projected milestone date — projected only from runs
+  already logged today/this week, never from a lapsed run, and skipping badges pinned by an
+  override. Views render from these three functions only; they must not re-derive priorities,
+  deadlines or projections.
 - **`statusOf(badge, state, today?)`** stays the only source of displayed status. Precedence:
   manual `override` → `completed`/`not_started` for quick & community → milestone for streak
   (`current >= target` → completed, `current > 0` → active) and weekly (same, in weeks).
@@ -329,8 +346,11 @@ npm test            # == node --test "tests/*.test.js"
 
 They cover the domain only (`src/domain/*`): local-date math, daily streak rules, ISO week
 rules, milestone status, the activity log (normalization, rebuilds, summary, 90-day heatmap),
-v1→v2→v3 migration, import validation, and localStorage persistence (via a fake
+the Today's Quest rule engine (priorities, ranking, at-risk honesty, no-mandate copy,
+`rewardProgress` projections), v1→v2→v3 migration, import validation, and localStorage
+persistence (via a fake
 `localStorage` in a child process). No DOM/browser test lives in the repo — if you touch UI
 code, verify manually with a static server (§10) or a headless browser; the v3 work was
 validated with a Chrome DevTools Protocol smoke script (render, log/reset, Community Mode,
-import/export, migration, zero console errors) plus desktop/mobile screenshots.
+quest priorities/AT RISK, import/export, migration, zero console errors) plus desktop/mobile
+screenshots.

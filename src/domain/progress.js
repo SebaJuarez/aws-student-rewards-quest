@@ -1,4 +1,8 @@
-import {addDays,daysBetween,isValidDateStr,todayStr} from './dates.js';
+import {addDays,addWeeks,daysBetween,isValidDateStr,todayStr,weekEndDate} from './dates.js';
+import {BADGES} from '../data/badges.js';
+import {STREAK_KEYS,WEEK_KEYS,streakView,weekView} from './activity.js';
+import {completedCount,statusOf} from './status.js';
+import {getNextBestActions} from './quest.js';
 
 export function levelFor(c){if(c>=21)return'Badge Master';if(c>=14)return'Community Builder';if(c>=7)return'Streak Builder';if(c>=2)return'Cloud Initiate';return'Newcomer'}
 export function nextMilestone(c){if(c<7)return{n:7,label:'7 badges → $10 credits'};if(c<14)return{n:14,label:'14 badges → +$20 credits'};if(c<21)return{n:21,label:'21 badges → cert voucher'};return{n:21,label:'All 21 complete'}}
@@ -30,4 +34,54 @@ export function timelineModel(s,today=todayStr()){
     };
   });
   return {start,today,day:dayNumber(s,today),milestones};
+}
+
+// Projection: earliest badge completion date that can be stated honestly right now —
+// only for runs already logged today/this week (nothing is projected from a lapsed run),
+// and never for badges the user pinned with a manual override.
+function nextBadgeDate(s,today){
+  const candidates=[];
+  const pinned=s&&s.overrides?s.overrides:{};
+  const streaks=s&&s.streaks?s.streaks:{};
+  STREAK_KEYS.forEach(key=>{
+    const v=streakView(streaks[key],today);
+    if(!v.loggedToday||v.current<1)return;
+    BADGES.filter(b=>b.type==='streak'&&b.key===key&&!pinned[b.id]&&statusOf(b,s,today)!=='completed').forEach(b=>{
+      const date=addDays(today,b.target-v.current);
+      if(date)candidates.push({date,badge:b.id,name:b.name,n:b.n});
+    });
+  });
+  const weekly=s&&s.weekly?s.weekly:{};
+  WEEK_KEYS.forEach(key=>{
+    const v=weekView(weekly[key],today);
+    if(!v.loggedThisWeek||v.current<1)return;
+    const badge=BADGES.find(b=>b.type==='weekly'&&b.key===key);
+    if(!badge||pinned[badge.id]||statusOf(badge,s,today)==='completed')return;
+    const weekKey=addWeeks(v.thisWeek,badge.target-v.current);
+    const date=weekEndDate(weekKey);
+    if(date)candidates.push({date,badge:badge.id,name:badge.name,n:badge.n});
+  });
+  candidates.sort((a,b)=>a.date.localeCompare(b.date)||a.n-b.n);
+  return candidates.length?candidates[0]:null;
+}
+
+// Helper behind the quest summary line: next reward, how many badges are missing for it,
+// the earliest projected milestone date (null when nothing can be projected) and the top
+// recommended actions.
+export function rewardProgress(s,today=todayStr()){
+  const completed=completedCount(s,today);
+  const next=nextMilestone(completed);
+  const milestone=nextBadgeDate(s,today);
+  const actionsNeeded=getNextBestActions(s,today);
+  return {
+    completed,
+    total:BADGES.length,
+    remaining:Math.max(0,BADGES.length-completed),
+    remainingToNext:Math.max(0,next.n-completed),
+    next,
+    milestoneDate:milestone?milestone.date:null,
+    milestoneBadge:milestone?milestone.badge:null,
+    milestoneName:milestone?milestone.name:null,
+    actionsNeeded
+  };
 }

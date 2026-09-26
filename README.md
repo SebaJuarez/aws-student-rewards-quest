@@ -18,7 +18,10 @@ can I do today, what unlocks next, and what am I at risk of losing?*
 - Tracks progress on all 21 Student Rewards badges — `X / 21`, by phase, with real names and
   paraphrased requirement summaries.
 - **Today's Quest**: computes the 3–5 highest-value actions to take right now (streaks at
-  risk first, then long-duration streaks worth starting on day 1, then quick wins).
+  risk first, then long-duration streaks worth starting on day 1, then quick wins), with an
+  explicit **AT RISK** block for whatever you can still lose before the day or the week closes.
+- **Activity section**: today's log, the last 7 days, a 90-day heatmap and recent entries —
+  the day-by-day record of truth that streaks and weeks are rebuilt from.
 - **Streaks**: sign-in, like, and comment activity tracked as continuous counters, with the
   7 / 30 / 90-day badges read off the same counter as milestones.
 - **90-day timeline**: dynamically calculated Day 1 / 7 / 30 / 90 markers from your actual
@@ -53,7 +56,7 @@ path if you want to move it to a component framework later.
 src/
 ├── app.js        # entry point: wires events, triggers the first render
 ├── data/         # static catalog: badges + phases, sources, reward tiers
-├── domain/       # DOM-free logic: store (localStorage), status rules, selectors
+├── domain/       # DOM-free logic: store (localStorage), status rules, activity, quest engine
 ├── ui/           # render orchestrator, one view file per section, drawer, events
 └── styles/       # design tokens, base, layout, components, overlays, responsive
 ```
@@ -74,8 +77,8 @@ Then open the printed localhost URL.
 ## Project status & roadmap
 
 This is v1 — the core loop (track, decide what to do today, don't lose your streak) works
-end to end. Deliberately left for later iterations: a full 90-day contribution heatmap,
-per-day activity logging, completion micro-animations, a light theme, and (optionally) a
+end to end. Deliberately left for later iterations: logging or undoing an arbitrary *past* day
+in the activity log, completion micro-animations, a light theme, and (optionally) a
 React/TypeScript rewrite once the UI outgrows the current module split. Full backlog and
 editing conventions live in [`AGENTS.md`](./AGENTS.md) — start there before opening a PR or
 pointing an AI coding agent at this repo.
