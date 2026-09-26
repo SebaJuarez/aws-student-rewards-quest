@@ -1,8 +1,10 @@
-import {SL} from '../data/badges.js';
-import {setMode,resetAll,logStreak,resetStreak,getState,replaceState,defaultState,setStorageErrorHandler} from '../domain/store.js';
+import {SL,WL} from '../data/badges.js';
+import {setMode,resetAll,logStreak,resetStreak,logWeek,resetWeek,getState,importState,setStorageErrorHandler} from '../domain/store.js';
 import {render} from './render.js';
 import {toast} from './toast.js';
 import {openDrawer,closeDrawer} from './drawer.js';
+
+function inCommunityMode(){return getState().mode==='community'}
 
 export function bindEvents(){
   setStorageErrorHandler(toast);
@@ -21,8 +23,16 @@ export function bindEvents(){
   document.getElementById('fileImport').onchange=(e)=>{
     const f=e.target.files[0]; if(!f)return;
     const r=new FileReader();
-    r.onload=()=>{try{const p=JSON.parse(r.result); if(typeof p!=='object'||!p.completed) throw 0; replaceState(Object.assign(defaultState(),p)); render(); toast('Progress imported');}catch(err){toast('Invalid file — could not import');}};
+    r.onload=()=>{
+      try{
+        importState(JSON.parse(r.result));
+        render(); toast('Progress imported');
+      }catch(err){
+        toast(err instanceof SyntaxError?'Invalid file — could not import':`Invalid file — ${err.message}`);
+      }
+    };
     r.readAsText(f);
+    e.target.value='';
   };
 
   document.body.addEventListener('click',(e)=>{
@@ -32,13 +42,27 @@ export function bindEvents(){
       return;
     }
     const log=e.target.closest('[data-log]'); if(log){
+      if(inCommunityMode()){toast('Switch to Personal Mode to log activity');return;}
       const k=log.dataset.log;
       const current=logStreak(k);
       if(current===null){toast('Already logged today');return;}
       render();toast(`${SL[k]} streak: ${current} days`);return;
     }
+    const lw=e.target.closest('[data-logweek]'); if(lw){
+      if(inCommunityMode()){toast('Switch to Personal Mode to log activity');return;}
+      const k=lw.dataset.logweek;
+      const current=logWeek(k);
+      if(current===null){toast('Already logged this week');return;}
+      render();toast(`${WL[k]} streak: ${current} of 4 weeks`);return;
+    }
     const rs=e.target.closest('[data-resetstreak]'); if(rs){
+      if(inCommunityMode()){toast('Switch to Personal Mode first');return;}
       if(confirm('Reset this streak to 0?')){resetStreak(rs.dataset.resetstreak);render();toast('Streak reset');}
+      return;
+    }
+    const rw=e.target.closest('[data-resetweek]'); if(rw){
+      if(inCommunityMode()){toast('Switch to Personal Mode first');return;}
+      if(confirm('Reset this weekly streak to 0?')){resetWeek(rw.dataset.resetweek);render();toast('Weekly streak reset');}
       return;
     }
   });

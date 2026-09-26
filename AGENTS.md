@@ -23,16 +23,24 @@ or rewards.
   - `src/app.js` — entry point: wires events, triggers the first render.
   - `src/data/` — static catalog only: badge definitions + phases (`badges.js`), cited
     sources (`sources.js`), reward tiers (`rewards.js`).
-  - `src/domain/` — DOM-free logic: `dates.js`, `store.js` (the **only** module allowed to
-    touch `localStorage`), `status.js` (`statusOf` / `completedCount`), `progress.js`
-    (level / milestone / day selectors), `quest.js` (Today's Quest suggestions).
+  - `src/domain/` — DOM-free logic: `dates.js` (local calendar-date + ISO week helpers),
+    `activity.js` (pure streak/week transitions + derived views), `store.js` (the **only**
+    module allowed to touch `localStorage`), `status.js` (`statusOf` / `completedCount`),
+    `progress.js` (level / milestone / day selectors), `quest.js` (Today's Quest
+    suggestions).
   - `src/ui/` — `render.js` (orchestrator), `views/` (one file per page section), `drawer.js`,
     `toast.js`, `events.js` (all DOM event wiring lives here).
   - `src/styles/` — `tokens.css` (design tokens), `base.css`, `layout.css`, `components.css`,
     `overlays.css`, `responsive.css`. Link order in `index.html` is cascade order:
     `responsive.css` must stay last (it overrides rules from the other files).
+  - `tests/` — dependency-free domain tests (see §10). The root `package.json` exists **only**
+    to declare `"type": "module"` and the `test` script: no dependencies, no build step, and
+    the app still runs with zero install.
 - No backend, no auth, no database, no paid services. Everything lives in the browser via
-  `localStorage`, under the versioned key `aws-student-rewards.quest.v1`.
+  `localStorage`, under the versioned key `aws-student-rewards.quest.v2`. The legacy
+  `aws-student-rewards.quest.v1` key is migrated into v2 on first load and is then left in
+  place untouched as a backup (it is never deleted, so a failed migration never destroys
+  progress).
 - Ships with the author's real starting state hardcoded as the *default* (2/21 badges:
   Hello, World! + Photo Finisher) — but nothing is hardcoded into the UI; every number is
   derived from state at render time. Never reintroduce hardcoded progress into a component.
@@ -59,8 +67,8 @@ you do migrate:
 ## 4. Data model (as implemented under `src/`)
 
 Locations: `Badge` and `Source` shapes → `src/data/badges.js`, `src/data/sources.js`;
-`UserState`, `defaultState()`, `load()`/`save()` → `src/domain/store.js`;
-`statusOf` → `src/domain/status.js`.
+`UserState`, `defaultState()`, `load()`/`save()`/`normalizeState()` → `src/domain/store.js`;
+`statusOf` → `src/domain/status.js`; derived streak/week views → `src/domain/activity.js`.
 
 ```js
 // A badge definition (static, in-code — not user data)
@@ -88,21 +96,26 @@ Source = {
   type: "official" | "community"
 }
 
-// Persisted user state -> localStorage["aws-student-rewards.quest.v1"]
+// Persisted user state -> localStorage["aws-student-rewards.quest.v2"]
 UserState = {
-  version: 1,
-  startedAt: "YYYY-MM-DD",
+  version: 2,                          // STATE_VERSION — bump together with STORAGE_KEY
+  startedAt: "YYYY-MM-DD",             // local calendar date
   mode: "personal" | "community",
   completed: { [badgeId]: true },       // quick + community badge completion
   overrides: { [badgeId]: "not_started"|"active"|"completed" }, // manual force-status
   streaks: {
-    signin: { current: number, longest: number, startedAt: string|null, last: string|null },
+    signin: {
+      current: number,   // length of the run AT THE TIME OF `last` (not a live value)
+      longest: number,   // best run ever recorded (never reset)
+      startedAt: "YYYY-MM-DD"|null,  // first day of the current run
+      last: "YYYY-MM-DD"|null        // day the run was last logged (the identity of the run)
+    },
     like:   { ... same shape },
     comment:{ ... same shape }
   },
   weekly: {
-    wishVote:       { current, longest, startedAt, last },
-    articlePublish: { current, longest, startedAt, last }
+    wishVote:       { weeks: ["2026-W39", ...], longest: number },
+    articlePublish: { weeks: ["2026-W39", ...], longest: number }
   },
   notes: { [badgeId]: string }
 }
@@ -113,9 +126,51 @@ continuous counter each**, not nine independent trackers. The 7-day / 30-day / 9
 of the same family are just milestones read off the same counter (`current >= target`). This
 matches how the real program works — do not split them back into per-badge counters.
 
-`statusOf(badge, state)` is the single source of truth for a badge's displayed status.
-`overrides` always wins, so a user can always manually correct a badge the tracker got wrong.
-Never compute status a second way in a new component — call `statusOf`.
+### 4.1 Streak and week rules (the domain's source of truth)
+
+All of this lives in `src/domain/dates.js` (date/week primitives) and
+`src/domain/activity.js` (pure transitions + derived views). `store.js` only persists what
+those functions return; nothing in `src/ui/` may re-derive any of it.
+
+- **Dates are local calendar dates** (`"YYYY-MM-DD"` built from local components). Never use
+  `toISOString().slice(0,10)` and never `new Date("YYYY-MM-DD")` (UTC parsing) — use
+  `todayStr()`, `parseLocalDate()`, `addDays()`, `daysBetween()`, `formatDate()`. Arithmetic
+  (`addDays` / `daysBetween` / week math) runs on UTC-normalized midnights so DST cannot
+  shift a date.
+- **Daily streak**: `nextStreak(state, today)` returns a new streak only when
+  `daysBetween(last, today) === 1` (continue) or there is no `last` (start at 1). Same day →
+  `logged:false` (idempotent); any other gap → restart at 1; `longest` is only ever raised.
+  An out-of-order date (before `last`) is refused.
+- **Live reads**: `streakView(state, today)` derives `current = last is today or yesterday ?
+  stored current : 0`, plus `alive`, `loggedToday`, `atRisk` (last was yesterday) and
+  `expired` (gap > 1 day). Stored `current` is "as of `last`"; the derived value is what the
+  UI and `statusOf` show, so a counter can never look alive after a gap.
+- **Weekly streak**: weeks are stored as ISO week keys (`"2026-W39"`, Mon–Sun, week 1 = the
+  week containing Jan 4). `nextWeek()` adds the current week key only if it is not already in
+  `weeks`. `weekView(state, today)` derives `current` (consecutive weeks ending at the last
+  registered week, only while that week is the current or previous one), `loggedThisWeek`,
+  `atRisk`, `expired` and `longest` (max run over `weeks`).
+- **`statusOf(badge, state, today?)`** stays the only source of displayed status. Precedence:
+  manual `override` → `completed`/`not_started` for quick & community → milestone for streak
+  (`current >= target` → completed, `current > 0` → active) and weekly (same, in weeks).
+  The optional `today` parameter exists for tests only; UI call sites rely on the default.
+- **Community Mode is read-only.** `getViewState()` returns the demo state when
+  `mode === 'community'`; every view and the drawer must render from the state they are
+  handed (never from `getState()`), and demo-state actions (log/reset/override/note) are
+  disabled so demo progress can never mix with personal counters.
+
+Assumptions / limitations worth knowing before you change any of this:
+
+- A milestone reflects the **current** run, not `longest`: breaking a 30-day streak makes the
+  30-day badge show `not_started` again (the risk framing is intentional). Use a manual
+  override to pin a badge the real AWS program already granted you.
+- The v1→v2 migration cannot reconstruct day-by-day history: a v1 counter that was still
+  alive at migration keeps its value (it may be optimistic, because the old code incremented
+  across gaps); a v1 counter whose `last` was more than a day old is reset to 0 with
+  `longest` preserved.
+- Logging is refused when the date is before `last` (clock moved backwards / timezone travel
+  westwards); the streak view keeps showing the run until `last` catches up.
+- `weekly.*.longest` is persisted, so a reset of `weeks` never erases the record.
 
 ## 5. Source-integrity rules (hard constraints, not style preferences)
 
@@ -171,13 +226,16 @@ light mode yet, see backlog).
 ## 7. Conventions when editing
 
 - Centralize all `localStorage` access in `src/domain/store.js`. That module exposes
-  `save()` plus intent-level mutations (`logStreak`, `resetStreak`, `setOverride`,
-  `clearOverride`, `setNote`, `setMode`, `resetAll`, `replaceState`). Never call
-  `localStorage.getItem/setItem` from a view, render function, or event handler directly —
-  views read state through `getState()` and change it through those mutations.
-- Bump `STORAGE_KEY` (e.g. `...v2`) and write a migration in `load()` inside
-  `src/domain/store.js` if you change the shape of `UserState` — don't silently break
-  existing users' saved progress.
+  `save()` plus intent-level mutations (`logStreak`, `resetStreak`, `logWeek`, `resetWeek`,
+  `setOverride`, `clearOverride`, `setNote`, `setMode`, `resetAll`, `replaceState`,
+  `importState`) and the readers `getState()` (raw) / `getViewState()` (personal state, or
+  the demo state in Community Mode). Never call `localStorage.getItem/setItem` from a view,
+  render function, or event handler directly — views render from the state they are handed.
+- Bump `STORAGE_KEY` (e.g. `...v3`) **together with `STATE_VERSION`** and write a migration
+  in `load()` inside `src/domain/store.js` if you change the shape of `UserState` — don't
+  silently break existing users' saved progress. `normalizeState()` is the validation gate:
+  structural problems throw (so `importState` rejects the file), while coercible values are
+  sanitized. The v1→v2 migration is the reference implementation of both.
 - Every derived number in the UI (`completedCount`, level, next milestone, day count) must be
   computed from `state`/`BADGES` at render time — never hardcode a count.
 - Keep `render()` (in `src/ui/render.js`) idempotent and cheap enough to call after every
@@ -197,20 +255,19 @@ Left out of v1 deliberately to ship a working core first. In rough priority orde
 1. **90-day contribution heatmap** (90 individual day-cells, gray/orange/green/red) described
    in the original brief — currently replaced by a 4-point timeline strip (Day 1/7/30/90).
 2. **Per-day activity log** (visit/like/comment/wish-vote/article, selectable by calendar day)
-   — currently only aggregate streak counters exist, not a day-by-day log.
+   — daily streaks now store the run's identity (`last` / `startedAt`) and weekly badges
+   store real week keys, so the data exists, but there is still no day-by-day log UI.
 3. **Subtle completion micro-interactions** (badge pop, XP gain animation) — currently instant
    state updates with no animation.
 4. **Per-badge unique source mapping** — all badges currently cite the same pool of 5
    community sources; a more precise mapping (which specific article covers which badge) would
    strengthen the "Sources" drawer.
-5. **True calendar-week tracking** for the two 4-week badges — currently a simple "log this
-   week" counter (0–4), not tied to actual ISO week boundaries.
-6. **Accessibility pass**: current build has semantic HTML, focus-visible states, and
+5. **Accessibility pass**: current build has semantic HTML, focus-visible states, and
    `prefers-reduced-motion`, but has not had a full screen-reader/keyboard-only walkthrough.
-7. **Light theme** — only dark theme exists today.
-8. **React + TypeScript + Vite migration** (see §3) — only worth doing once UI complexity
+6. **Light theme** — only dark theme exists today.
+7. **React + TypeScript + Vite migration** (see §3) — only worth doing once UI complexity
    justifies component boundaries; keep the data model from §4 intact if you do this.
-9. **Shareable progress image / leaderboard / cloud sync** — explicitly deferred until there's
+8. **Shareable progress image / leaderboard / cloud sync** — explicitly deferred until there's
    a backend; do not add a backend without discussing it first, per §9.
 
 ## 9. Guardrails — do not do these without being explicitly asked
@@ -235,6 +292,13 @@ python3 -m http.server 8080
 Then open the printed localhost URL. GitHub Pages / Netlify / any static host work the same
 way with no extra configuration.
 
-There is no test suite yet. If you add one (recommended before a big refactor), prefer
-something dependency-light (e.g. Playwright for a couple of smoke tests: load app, toggle a
-badge, export, import, reset) over a heavy framework.
+Tests are dependency-free and run on Node's built-in test runner (no install needed):
+
+```bash
+npm test            # == node --test "tests/*.test.js"
+```
+
+They cover the domain only (`src/domain/*`): local-date math, daily streak rules, ISO week
+rules, milestone status, v1→v2 migration, import validation, and localStorage persistence
+(via a fake `localStorage` in a child process). No DOM/browser test exists yet — if you touch
+UI code, verify manually with a static server (§10) or a headless browser.

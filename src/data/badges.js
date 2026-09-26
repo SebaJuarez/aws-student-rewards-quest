@@ -1,5 +1,6 @@
 const SR={signin:'Sign in to Builder Center on {N} consecutive days.',like:'Like at least one community post on {N} consecutive days.',comment:'Leave a meaningful, on-topic comment on {N} consecutive days.'};
 export const SL={signin:'Sign-in',like:'Like',comment:'Comment'};
+export const WL={wishVote:'Wish vote',articlePublish:'Article publishing'};
 
 const streakBadge=(n,name,phase,key,target)=>({id:'streak-'+key+'-'+target,n,name,phase,type:'streak',key,target,req:SR[key].replace('{N}',target)});
 
