@@ -4,3 +4,12 @@
   .timeline{grid-template-columns:repeat(2,1fr)}
   .brand .t2{display:none}
 }
+
+@media(max-width:640px){
+  .heat-wrap{grid-template-columns:1fr}
+  .heat-scroll,.heat-detail,.heat-legend{grid-row:auto;grid-column:auto}
+  .act-hrow,.act-row{grid-template-columns:54px repeat(5,1fr);gap:5px}
+  .act-row{padding:7px 9px}
+  .act-today-head{font-size:11px}
+  .apill{padding:6px 11px;font-size:11.5px}
+}

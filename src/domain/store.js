@@ -1,12 +1,18 @@
-import {daysBetween,isValidDateStr,normWeekKey,todayStr,weekKeyOf} from './dates.js';
+import {addDays,daysBetween,isValidDateStr,normWeekKey,todayStr,weekKeyOf} from './dates.js';
 import {
   OVERRIDE_VALUES,STREAK_KEYS,WEEK_KEYS,emptyStreak,emptyWeek,maxWeekRun,
-  nextStreak,nextWeek,normalizeStreak,normalizeWeek,weekView,weeksFromAnchor
+  normalizeStreak,normalizeWeek,weekView,weeksFromAnchor
 } from './activity.js';
+import {
+  clearActivity,hasActivity,logHasWeek,normalizeLog,
+  rebuildStreaks,rebuildWeekly,writeActivity
+} from './activityLog.js';
 
-export const STORAGE_KEY='aws-student-rewards.quest.v2';
+export const STORAGE_KEY='aws-student-rewards.quest.v3';
+export const PRIOR_STORAGE_KEY='aws-student-rewards.quest.v2';
 export const LEGACY_STORAGE_KEY='aws-student-rewards.quest.v1';
-export const STATE_VERSION=2;
+export const LEGACY_STORAGE_KEYS=[PRIOR_STORAGE_KEY,LEGACY_STORAGE_KEY];
+export const STATE_VERSION=3;
 
 const OVERRIDE_SET=new Set(OVERRIDE_VALUES);
 
@@ -16,12 +22,37 @@ export function defaultState(){
   WEEK_KEYS.forEach(k=>{weekly[k]=emptyWeek()});
   return {version:STATE_VERSION,startedAt:todayStr(),mode:'personal',
     completed:{'hello-world':true,'photo-finisher':true},
-    overrides:{},streaks,weekly,notes:{}};
+    overrides:{},activityLog:{},streaks,weekly,notes:{}};
+}
+
+function demoActivityLog(today){
+  let log={};
+  for(let i=0;i<14;i++){
+    const date=addDays(today,-i);
+    if(!date)continue;
+    log=writeActivity(log,date,'signin');
+    if(i%6!==0)log=writeActivity(log,date,'like');
+    if(i<2||i%5===0)log=writeActivity(log,date,'comment');
+  }
+  const lastWeek=addDays(today,-7);
+  if(lastWeek){
+    log=writeActivity(log,today,'wishVote');
+    log=writeActivity(log,lastWeek,'wishVote');
+    log=writeActivity(log,lastWeek,'articlePublish');
+  }
+  return log;
 }
 
 export function communityDemoState(){
-  return {...defaultState(),mode:'community',
-    completed:{'hello-world':true,'photo-finisher':true,'knowledge-seeker':true,'discussion-debut':true,'first-wish':true}};
+  const today=todayStr();
+  const activityLog=demoActivityLog(today);
+  const s={...defaultState(),mode:'community',
+    startedAt:addDays(today,-13)||today,
+    completed:{'hello-world':true,'photo-finisher':true,'knowledge-seeker':true,'discussion-debut':true,'first-wish':true},
+    activityLog};
+  s.streaks=rebuildStreaks(activityLog,s.streaks);
+  s.weekly=rebuildWeekly(activityLog,s.weekly);
+  return s;
 }
 
 let onStorageError=()=>{};
@@ -82,10 +113,41 @@ function migrateWeeklyV1(raw){
 }
 
 function migrateV1(raw){
-  const s={...raw,version:STATE_VERSION};
+  const s={...raw,version:2};
   s.streaks=migrateStreaksV1(raw.streaks);
   s.weekly=migrateWeeklyV1(raw.weekly);
   return s;
+}
+
+const MAX_SEED_DAYS=365;
+
+// v2 -> v3: materialize the runs the stored counters already claim as real days in the
+// activity log (a streak of N days ending on `last` IS those N days). Weeks recorded in v2
+// have no known day, so they stay as the `weekly.weeks` baseline instead of being guessed.
+function seedLogFromStreaks(base,raw){
+  const out={...base};
+  if(!raw||typeof raw!=='object')return out;
+  STREAK_KEYS.forEach(key=>{
+    const entry=raw[key];
+    if(!entry||typeof entry!=='object')return;
+    const last=isValidDateStr(entry.last)?entry.last:null;
+    const n=typeof entry.current==='number'&&Number.isFinite(entry.current)&&entry.current>0
+      ?Math.min(Math.floor(entry.current),MAX_SEED_DAYS):0;
+    if(!last||n<1)return;
+    for(let i=n-1;i>=0;i--){
+      const date=addDays(last,-i);
+      if(!date)continue;
+      if(!out[date])out[date]={};
+      out[date][key]=true;
+    }
+  });
+  return out;
+}
+
+function migrateV2(raw){
+  const base=raw.activityLog&&typeof raw.activityLog==='object'&&!Array.isArray(raw.activityLog)
+    ?raw.activityLog:{};
+  return {...raw,version:3,activityLog:seedLogFromStreaks(base,raw.streaks)};
 }
 
 export function normalizeState(raw){
@@ -93,7 +155,9 @@ export function normalizeState(raw){
   if(!Number.isInteger(raw.version))fail('missing or invalid "version"');
   if(raw.version<1)fail('missing or invalid "version"');
   if(raw.version>STATE_VERSION)fail(`version ${raw.version} is newer than this tracker (v${STATE_VERSION}) — update the app first`);
-  const s=raw.version===1?migrateV1(raw):raw;
+  let s=raw;
+  if(s.version===1)s=migrateV1(s);
+  if(s.version===2)s=migrateV2(s);
 
   const out=defaultState();
   out.version=STATE_VERSION;
@@ -163,6 +227,10 @@ export function normalizeState(raw){
     });
   }
 
+  out.activityLog=normalizeLog(s.activityLog);
+  out.streaks=rebuildStreaks(out.activityLog,out.streaks);
+  out.weekly=rebuildWeekly(out.activityLog,out.weekly);
+
   return out;
 }
 
@@ -180,14 +248,14 @@ function writeState(st){
 }
 
 function load(){
-  const current=readKey(STORAGE_KEY);
-  if(current!==null){try{return normalizeState(current)}catch(e){}}
-  const legacy=readKey(LEGACY_STORAGE_KEY);
-  if(legacy!==null){
+  const keys=[STORAGE_KEY,...LEGACY_STORAGE_KEYS];
+  for(const key of keys){
+    const raw=readKey(key);
+    if(raw===null)continue;
     try{
-      const migrated=normalizeState(legacy);
-      writeState(migrated);
-      return migrated;
+      const state=normalizeState(raw);
+      if(key!==STORAGE_KEY)writeState(state);
+      return state;
     }catch(e){}
   }
   return defaultState();
@@ -209,30 +277,40 @@ export function resetAll(){state=defaultState();save()}
 
 export function logStreak(key,today=todayStr()){
   if(!STREAK_KEYS.includes(key))return null;
-  const result=nextStreak(state.streaks[key],today);
-  state.streaks[key]=result.streak;
-  if(result.logged)save();
-  return result.logged?state.streaks[key].current:null;
+  const last=state.streaks[key]?state.streaks[key].last:null;
+  if(last&&daysBetween(last,today)<1)return null;
+  if(hasActivity(state.activityLog,today,key))return null;
+  state.activityLog=writeActivity(state.activityLog,today,key);
+  state.streaks=rebuildStreaks(state.activityLog,state.streaks);
+  save();
+  return state.streaks[key].current;
 }
 
 export function resetStreak(key){
   if(!STREAK_KEYS.includes(key))return;
-  const prev=state.streaks[key];
-  state.streaks[key]={...emptyStreak(),longest:prev?prev.longest:0};
+  const longest=state.streaks[key]?state.streaks[key].longest:0;
+  state.activityLog=clearActivity(state.activityLog,key);
+  state.streaks[key]={...emptyStreak(),longest};
   save();
 }
 
 export function logWeek(key,today=todayStr()){
   if(!WEEK_KEYS.includes(key))return null;
-  const result=nextWeek(state.weekly[key],today);
-  state.weekly[key]=result.week;
-  if(result.logged)save();
-  return result.logged?weekView(state.weekly[key],today).current:null;
+  const week=weekKeyOf(today);
+  if(!week)return null;
+  if(state.weekly[key]&&state.weekly[key].weeks.includes(week))return null;
+  if(logHasWeek(state.activityLog,key,week))return null;
+  state.activityLog=writeActivity(state.activityLog,today,key);
+  state.weekly=rebuildWeekly(state.activityLog,state.weekly);
+  save();
+  return weekView(state.weekly[key],today).current;
 }
 
 export function resetWeek(key){
   if(!WEEK_KEYS.includes(key))return;
-  const prev=state.weekly[key];
-  state.weekly[key]={...emptyWeek(),longest:prev?prev.longest:0};
+  const longest=state.weekly[key]?state.weekly[key].longest:0;
+  state.activityLog=clearActivity(state.activityLog,key);
+  state.weekly[key]={weeks:[],longest};
   save();
 }
+

@@ -5,8 +5,8 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 
 import {
-  addDays,addWeeks,daysBetween,formatDate,isWeekKey,isValidDateStr,
-  normWeekKey,parseLocalDate,todayStr,weekDiff,weekKeyOf
+  addDays,addWeeks,daysBetween,formatDate,formatMonth,isWeekKey,isValidDateStr,
+  normWeekKey,parseLocalDate,todayStr,weekDiff,weekKeyOf,weekdayIndex
 } from '../src/domain/dates.js';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
@@ -138,4 +138,14 @@ console.log(JSON.stringify({
   assert.equal(out.midnight,0,'parseLocalDate must produce local midnight, not UTC midnight');
   assert.equal(out.added,'2027-01-01');
   assert.equal(out.fmt,'Jan 1');
+});
+
+test('weekdayIndex and formatMonth describe calendar positions',()=>{
+  assert.equal(weekdayIndex('2026-09-21'),0,'Monday opens the ISO week');
+  assert.equal(weekdayIndex('2026-09-25'),4);
+  assert.equal(weekdayIndex('2026-09-27'),6,'Sunday closes the ISO week');
+  assert.equal(weekdayIndex('nope'),null);
+  assert.equal(formatMonth('2026-09-25'),'Sep');
+  assert.equal(formatMonth('2026-12-01'),'Dec');
+  assert.equal(formatMonth('bad'),'');
 });

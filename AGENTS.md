@@ -24,9 +24,12 @@ or rewards.
   - `src/data/` — static catalog only: badge definitions + phases (`badges.js`), cited
     sources (`sources.js`), reward tiers (`rewards.js`).
   - `src/domain/` — DOM-free logic: `dates.js` (local calendar-date + ISO week helpers),
-    `activity.js` (pure streak/week transitions + derived views), `store.js` (the **only**
+    `activity.js` (pure streak/week transitions + derived views), `activityLog.js` (the
+    activity-log source of truth: normalization, run/week rebuilds, Activity-section models —
+    summary, 90-day heatmap), `store.js` (the **only**
     module allowed to touch `localStorage`), `status.js` (`statusOf` / `completedCount`),
-    `progress.js` (level / milestone / day selectors), `quest.js` (Today's Quest
+    `progress.js` (level / milestone / day selectors + `timelineModel`, the single source of
+    journey dates), `quest.js` (Today's Quest
     suggestions).
   - `src/ui/` — `render.js` (orchestrator), `views/` (one file per page section), `drawer.js`,
     `toast.js`, `events.js` (all DOM event wiring lives here).
@@ -37,10 +40,10 @@ or rewards.
     to declare `"type": "module"` and the `test` script: no dependencies, no build step, and
     the app still runs with zero install.
 - No backend, no auth, no database, no paid services. Everything lives in the browser via
-  `localStorage`, under the versioned key `aws-student-rewards.quest.v2`. The legacy
-  `aws-student-rewards.quest.v1` key is migrated into v2 on first load and is then left in
-  place untouched as a backup (it is never deleted, so a failed migration never destroys
-  progress).
+  `localStorage`, under the versioned key `aws-student-rewards.quest.v3`. The legacy
+  `aws-student-rewards.quest.v2` and `.v1` keys are migrated into v3 on first load and are
+  then left in place untouched as backups (they are never deleted, so a failed migration
+  never destroys progress).
 - Ships with the author's real starting state hardcoded as the *default* (2/21 badges:
   Hello, World! + Photo Finisher) — but nothing is hardcoded into the UI; every number is
   derived from state at render time. Never reintroduce hardcoded progress into a component.
@@ -96,9 +99,9 @@ Source = {
   type: "official" | "community"
 }
 
-// Persisted user state -> localStorage["aws-student-rewards.quest.v2"]
+// Persisted user state -> localStorage["aws-student-rewards.quest.v3"]
 UserState = {
-  version: 2,                          // STATE_VERSION — bump together with STORAGE_KEY
+  version: 3,                          // STATE_VERSION — bump together with STORAGE_KEY
   startedAt: "YYYY-MM-DD",             // local calendar date
   mode: "personal" | "community",
   completed: { [badgeId]: true },       // quick + community badge completion
@@ -117,6 +120,14 @@ UserState = {
     wishVote:       { weeks: ["2026-W39", ...], longest: number },
     articlePublish: { weeks: ["2026-W39", ...], longest: number }
   },
+  // THE activity log — what the user actually did, day by day (source of truth;
+  // streaks/weekly above are derived from it and rebuilt on every load/import)
+  activityLog: {
+    "YYYY-MM-DD": {                    // only days with something logged; no empty days
+      signin?: true, like?: true, comment?: true,   // only `true` is ever stored,
+      wishVote?: true, articlePublish?: true        // key order = ACTIVITY_KEYS
+    }                                 // an invalid date key throws (never guessed)
+  },
   notes: { [badgeId]: string }
 }
 ```
@@ -126,11 +137,18 @@ continuous counter each**, not nine independent trackers. The 7-day / 30-day / 9
 of the same family are just milestones read off the same counter (`current >= target`). This
 matches how the real program works — do not split them back into per-badge counters.
 
+Second key decision: `activityLog` is the record of truth; `streaks`/`weekly` are caches
+derived from it (`rebuildStreaks` / `rebuildWeekly` in `src/domain/activityLog.js` run at the
+end of every `normalizeState`, i.e. on every load and import). The caches also carry what the
+log cannot know — `longest` records and legacy `weeks` that predate day-level logging.
+
 ### 4.1 Streak and week rules (the domain's source of truth)
 
-All of this lives in `src/domain/dates.js` (date/week primitives) and
-`src/domain/activity.js` (pure transitions + derived views). `store.js` only persists what
-those functions return; nothing in `src/ui/` may re-derive any of it.
+All of this lives in `src/domain/dates.js` (date/week primitives),
+`src/domain/activity.js` (pure transitions + derived views) and
+`src/domain/activityLog.js` (log normalization, run/week rebuilds, Activity-section models).
+`store.js` only persists what those functions return; nothing in `src/ui/` may re-derive any
+of it.
 
 - **Dates are local calendar dates** (`"YYYY-MM-DD"` built from local components). Never use
   `toISOString().slice(0,10)` and never `new Date("YYYY-MM-DD")` (UTC parsing) — use
@@ -150,6 +168,15 @@ those functions return; nothing in `src/ui/` may re-derive any of it.
   `weeks`. `weekView(state, today)` derives `current` (consecutive weeks ending at the last
   registered week, only while that week is the current or previous one), `loggedThisWeek`,
   `atRisk`, `expired` and `longest` (max run over `weeks`).
+- **Activity log**: `activityLog[date][key] = true` records what actually happened;
+  `logStreak`/`logWeek` write today's key (idempotent) and then rebuild the caches from the
+  log, `resetStreak`/`resetWeek` delete that key's days (`longest` survives). A day is only
+  written for dates `>= last`, so history is never backfilled or invented.
+- **Derived models**: `activitySummary()` + `heatmapModel()` (`activityLog.js`) and
+  `timelineModel()` (`progress.js`) are the only sources the Activity section and the
+  timeline may read — views must not compute day windows, milestone dates or week columns
+  themselves. Heatmap cells are `<button>`s with a full `aria-label`; red is reserved for
+  lost/risk, green for done, orange rings for milestones.
 - **`statusOf(badge, state, today?)`** stays the only source of displayed status. Precedence:
   manual `override` → `completed`/`not_started` for quick & community → milestone for streak
   (`current >= target` → completed, `current > 0` → active) and weekly (same, in weeks).
@@ -167,7 +194,9 @@ Assumptions / limitations worth knowing before you change any of this:
 - The v1→v2 migration cannot reconstruct day-by-day history: a v1 counter that was still
   alive at migration keeps its value (it may be optimistic, because the old code incremented
   across gaps); a v1 counter whose `last` was more than a day old is reset to 0 with
-  `longest` preserved.
+  `longest` preserved. The v2→v3 step then seeds an `activityLog` only from counters that
+  were **alive** at migration (at most 365 days back); anything older, any lapsed counter and
+  any pre-day-logging `weeks` entry stays baseline data with no invented days.
 - Logging is refused when the date is before `last` (clock moved backwards / timezone travel
   westwards); the streak view keeps showing the run until `last` catches up.
 - `weekly.*.longest` is persisted, so a reset of `weeks` never erases the record.
@@ -252,22 +281,22 @@ light mode yet, see backlog).
 
 Left out of v1 deliberately to ship a working core first. In rough priority order:
 
-1. **90-day contribution heatmap** (90 individual day-cells, gray/orange/green/red) described
-   in the original brief — currently replaced by a 4-point timeline strip (Day 1/7/30/90).
-2. **Per-day activity log** (visit/like/comment/wish-vote/article, selectable by calendar day)
-   — daily streaks now store the run's identity (`last` / `startedAt`) and weekly badges
-   store real week keys, so the data exists, but there is still no day-by-day log UI.
-3. **Subtle completion micro-interactions** (badge pop, XP gain animation) — currently instant
+1. **Per-day activity log editing** — the log, streak identities and week keys exist, and the
+   Activity section now shows today, the last 7 days, a 90-day heatmap and recent entries, but
+   there is still no UI to log or undo an arbitrary *past* day (logging only accepts today;
+   history is never backfilled, on purpose).
+2. **Subtle completion micro-interactions** (badge pop, XP gain animation) — currently instant
    state updates with no animation.
-4. **Per-badge unique source mapping** — all badges currently cite the same pool of 5
+3. **Per-badge unique source mapping** — all badges currently cite the same pool of 5
    community sources; a more precise mapping (which specific article covers which badge) would
    strengthen the "Sources" drawer.
-5. **Accessibility pass**: current build has semantic HTML, focus-visible states, and
-   `prefers-reduced-motion`, but has not had a full screen-reader/keyboard-only walkthrough.
-6. **Light theme** — only dark theme exists today.
-7. **React + TypeScript + Vite migration** (see §3) — only worth doing once UI complexity
+4. **Accessibility pass**: current build has semantic HTML, focus-visible states, `sr-only`
+   text, aria-labelled heatmap cells, and `prefers-reduced-motion`, but has not had a full
+   screen-reader/keyboard-only walkthrough.
+5. **Light theme** — only dark theme exists today.
+6. **React + TypeScript + Vite migration** (see §3) — only worth doing once UI complexity
    justifies component boundaries; keep the data model from §4 intact if you do this.
-8. **Shareable progress image / leaderboard / cloud sync** — explicitly deferred until there's
+7. **Shareable progress image / leaderboard / cloud sync** — explicitly deferred until there's
    a backend; do not add a backend without discussing it first, per §9.
 
 ## 9. Guardrails — do not do these without being explicitly asked
@@ -299,6 +328,9 @@ npm test            # == node --test "tests/*.test.js"
 ```
 
 They cover the domain only (`src/domain/*`): local-date math, daily streak rules, ISO week
-rules, milestone status, v1→v2 migration, import validation, and localStorage persistence
-(via a fake `localStorage` in a child process). No DOM/browser test exists yet — if you touch
-UI code, verify manually with a static server (§10) or a headless browser.
+rules, milestone status, the activity log (normalization, rebuilds, summary, 90-day heatmap),
+v1→v2→v3 migration, import validation, and localStorage persistence (via a fake
+`localStorage` in a child process). No DOM/browser test lives in the repo — if you touch UI
+code, verify manually with a static server (§10) or a headless browser; the v3 work was
+validated with a Chrome DevTools Protocol smoke script (render, log/reset, Community Mode,
+import/export, migration, zero console errors) plus desktop/mobile screenshots.

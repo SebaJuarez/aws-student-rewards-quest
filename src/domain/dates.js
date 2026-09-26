@@ -53,6 +53,18 @@ export function formatDate(s){
   return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
 }
 
+export function formatMonth(s){
+  const d=typeof s==='string'?parseLocalDate(s):(s instanceof Date?s:null);
+  if(!d)return '';
+  return d.toLocaleDateString('en-US',{month:'short'});
+}
+
+export function weekdayIndex(s){
+  const ms=dayMs(s);
+  if(ms===null)return null;
+  return (new Date(ms).getUTCDay()+6)%7;
+}
+
 function isoParts(s){
   const ms=dayMs(s);
   if(ms===null)return null;

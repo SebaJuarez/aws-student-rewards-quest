@@ -16,6 +16,7 @@ function fakeStorage(){
   };
 }
 
+const V3_KEY='aws-student-rewards.quest.v3';
 const V2_KEY='aws-student-rewards.quest.v2';
 const V1_KEY='aws-student-rewards.quest.v1';
 const TODAY=todayStr();
@@ -43,27 +44,35 @@ storage.setItem(V1_KEY,JSON.stringify({
 
 const store=await import('../src/domain/store.js');
 
-function savedV2(){
-  const raw=storage.getItem(V2_KEY);
-  assert.ok(raw,'expected progress to be written under the v2 key');
+function saved(){
+  const raw=storage.getItem(V3_KEY);
+  assert.ok(raw,'expected progress to be written under the v3 key');
   return JSON.parse(raw);
 }
 
-test('legacy v1 progress is migrated into the v2 key instead of being lost',()=>{
+test('legacy v1 progress is migrated into the v3 key instead of being lost',()=>{
   const s=store.getState();
-  assert.equal(s.version,2);
+  assert.equal(s.version,3);
   assert.equal(s.startedAt,addDays(TODAY,-40));
   assert.equal(s.completed['hello-world'],true);
   assert.equal(s.overrides['first-wish'],'completed');
   assert.equal(s.streaks.signin.current,5,'an alive v1 streak keeps its counter');
   assert.equal(s.streaks.signin.longest,9);
+  assert.equal(s.streaks.signin.last,addDays(TODAY,-1));
   assert.equal(s.streaks.comment.current,0,'a lapsed v1 streak restarts at 0');
   assert.equal(s.weekly.wishVote.weeks.length,3);
   assert.deepEqual(Object.keys(s.weekly.wishVote),['weeks','longest']);
 
-  const onDisk=savedV2();
-  assert.equal(onDisk.version,2);
+  for(let i=4;i>=0;i--){
+    const day=addDays(TODAY,-1-i);
+    assert.equal(s.activityLog[day].signin,true,`the claimed run of 5 days is materialized on ${day}`);
+  }
+  assert.equal(s.activityLog[addDays(TODAY,-7)],undefined,'no day is invented for a lapsed counter');
+
+  const onDisk=saved();
+  assert.equal(onDisk.version,3);
   assert.equal(storage.getItem(V1_KEY)!==null,true,'the v1 key is kept as a backup');
+  assert.equal(storage.getItem(V2_KEY),null,'the v2 key is not recreated when migrating straight from v1');
 });
 
 test('logStreak is idempotent within a day and strict about gaps',()=>{
@@ -79,7 +88,7 @@ test('logStreak is idempotent within a day and strict about gaps',()=>{
   assert.equal(store.logStreak('signin','2026-09-30'),1,'a missed day restarts at 1');
   assert.equal(store.getState().streaks.signin.longest,4);
 
-  const persisted=savedV2();
+  const persisted=saved();
   assert.equal(persisted.streaks.signin.current,1);
   assert.equal(persisted.streaks.signin.longest,4);
   assert.equal(persisted.streaks.signin.last,'2026-09-30');
@@ -100,7 +109,7 @@ test('logWeek records week identity and never double-counts a week',()=>{
   assert.deepEqual(store.getState().weekly.wishVote.weeks,['2026-W39','2026-W40','2026-W41']);
   assert.equal(store.getState().weekly.wishVote.longest,3);
 
-  const persisted=savedV2();
+  const persisted=saved();
   assert.deepEqual(persisted.weekly.wishVote.weeks,['2026-W39','2026-W40','2026-W41']);
 
   assert.equal(store.logWeek('wishVote','2026-10-21'),1,'a skipped week restarts at 1');
@@ -128,7 +137,7 @@ test('an export can be re-imported byte for byte',()=>{
   const exported=JSON.stringify(store.getState());
   const reimported=store.importState(JSON.parse(exported));
   assert.deepEqual(reimported,JSON.parse(exported));
-  assert.equal(storage.getItem(V2_KEY),JSON.stringify(store.getState()));
+  assert.equal(storage.getItem(V3_KEY),JSON.stringify(store.getState()));
 });
 
 test('importState rejects junk without corrupting the saved state',()=>{
@@ -137,7 +146,7 @@ test('importState rejects junk without corrupting the saved state',()=>{
   assert.throws(()=>store.importState({nothing:true}),/version/);
   assert.throws(()=>store.importState('string'),/JSON object/);
   assert.equal(JSON.stringify(store.getState()),before);
-  assert.equal(storage.getItem(V2_KEY),before);
+  assert.equal(storage.getItem(V3_KEY),before);
 });
 
 test('setOverride, setNote, setMode and resetAll persist through save()',()=>{
@@ -147,18 +156,18 @@ test('setOverride, setNote, setMode and resetAll persist through save()',()=>{
   assert.equal(store.getState().overrides['first-wish'],undefined);
 
   store.setNote('hello-world','note to remember');
-  assert.equal(savedV2().notes['hello-world'],'note to remember');
+  assert.equal(saved().notes['hello-world'],'note to remember');
 
   store.setMode('community');
-  assert.equal(savedV2().mode,'community');
+  assert.equal(saved().mode,'community');
   assert.equal(store.getViewState().mode,'community');
   store.setMode('personal');
   assert.equal(store.getViewState().mode,'personal');
 
   store.resetAll();
   const fresh=store.getState();
-  assert.equal(fresh.version,2);
+  assert.equal(fresh.version,3);
   assert.equal(fresh.completed['hello-world'],true);
   assert.deepEqual(fresh.weekly.wishVote.weeks,[]);
-  assert.equal(savedV2().startedAt,fresh.startedAt);
+  assert.equal(saved().startedAt,fresh.startedAt);
 });

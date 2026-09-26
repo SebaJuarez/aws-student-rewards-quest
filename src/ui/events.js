@@ -3,6 +3,7 @@ import {setMode,resetAll,logStreak,resetStreak,logWeek,resetWeek,getState,import
 import {render} from './render.js';
 import {toast} from './toast.js';
 import {openDrawer,closeDrawer} from './drawer.js';
+import {selectHeatDay} from './views/activity.js';
 
 function inCommunityMode(){return getState().mode==='community'}
 
@@ -13,6 +14,10 @@ export function bindEvents(){
   document.getElementById('modeCommunity').onclick=()=>{setMode('community');render();};
   document.getElementById('overlay').onclick=closeDrawer;
   document.addEventListener('keydown',(e)=>{if(e.key==='Escape')closeDrawer();});
+
+  const pickHeat=(e)=>{const cell=e.target.closest&&e.target.closest('[data-heat]');if(cell)selectHeatDay(cell);};
+  document.addEventListener('mouseover',pickHeat);
+  document.addEventListener('focusin',pickHeat);
 
   document.getElementById('btnReset').onclick=()=>{if(confirm('Reset ALL progress? This cannot be undone (export first if unsure).')){resetAll();render();toast('Progress reset');}};
   document.getElementById('btnExport').onclick=()=>{
@@ -36,6 +41,7 @@ export function bindEvents(){
   };
 
   document.body.addEventListener('click',(e)=>{
+    const cell=e.target.closest('[data-heat]'); if(cell){selectHeatDay(cell);return;}
     const open=e.target.closest('[data-open]'); if(open){openDrawer(open.dataset.open);return;}
     const start=e.target.closest('#btnStartJourney'); if(start){
       if(confirm('Reset to a fresh 0/21 start and switch to Personal Mode?')){resetAll();render();toast('Fresh start — good luck!');}

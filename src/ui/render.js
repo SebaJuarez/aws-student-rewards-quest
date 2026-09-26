@@ -5,6 +5,7 @@ import {renderQuest} from './views/quest.js';
 import {renderRoadmap} from './views/roadmap.js';
 import {renderStreaks} from './views/streaks.js';
 import {renderWeekly} from './views/weekly.js';
+import {renderActivity} from './views/activity.js';
 import {renderTimeline} from './views/timeline.js';
 import {renderRewards} from './views/rewards.js';
 import {renderSources} from './views/sources.js';
@@ -18,6 +19,7 @@ export function render(){
   renderRoadmap(view);
   renderStreaks(view);
   renderWeekly(view);
+  renderActivity(view);
   renderTimeline(view);
   renderRewards(view);
   renderSources();
