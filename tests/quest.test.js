@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {BADGES} from '../src/data/badges.js';
 import {defaultState} from '../src/domain/store.js';
-import {MAX_ACTIONS,PRIORITY,getAtRiskItems,getNextBestActions} from '../src/domain/quest.js';
+import {MAX_ACTIONS,PRIORITY,estimateMinutes,getAtRiskItems,getNextBestActions,nextActionForBadge} from '../src/domain/quest.js';
 import {rewardProgress} from '../src/domain/progress.js';
 import {addDays} from '../src/domain/dates.js';
 
@@ -288,4 +288,55 @@ test('rewardProgress reports the next reward, gap and honest milestone dates',()
 
   const heldBack=stateWith({completed:{},overrides:{'streak-comment-7':'not_started'},streaks:{comment:alive(6)}});
   assert.notEqual(rewardProgress(heldBack,TODAY).milestoneBadge,'streak-comment-7','even a not_started pin holds the badge back');
+});
+
+test('estimateMinutes reuses the engine estimates for every badge type',()=>{
+  const byId=(id)=>BADGES.find(b=>b.id===id);
+  assert.equal(estimateMinutes(byId('streak-signin-7')),1);
+  assert.equal(estimateMinutes(byId('streak-comment-90')),2);
+  assert.equal(estimateMinutes(byId('weekly-wish-vote')),5);
+  assert.equal(estimateMinutes(byId('weekly-article')),30);
+  assert.equal(estimateMinutes(byId('photo-finisher')),1,'quick estimates come from the dur string');
+  assert.equal(estimateMinutes(byId('first-article')),30);
+  assert.equal(estimateMinutes(byId('conversation-starter')),null,'no honest estimate for a community goal');
+});
+
+test('nextActionForBadge derives one terse step per badge from the live views',()=>{
+  const byId=(id)=>BADGES.find(b=>b.id===id);
+  const fresh=defaultState();
+  assert.equal(nextActionForBadge(byId('streak-signin-7'),fresh,TODAY),'Start today');
+  assert.equal(nextActionForBadge(byId('weekly-wish-vote'),fresh,TODAY),'Log this week');
+  assert.equal(nextActionForBadge(byId('knowledge-seeker'),fresh,TODAY),'Open & complete');
+  assert.equal(nextActionForBadge(byId('photo-finisher'),fresh,TODAY),'—','photo-finisher ships completed in the default state');
+  assert.equal(nextActionForBadge(byId('conversation-starter'),fresh,TODAY),'Open & track');
+
+  const risk=stateWith({completed:{},streaks:{comment:atRisk(14)}});
+  assert.equal(nextActionForBadge(byId('streak-comment-30'),risk,TODAY),'Log today');
+  assert.equal(nextActionForBadge(byId('streak-comment-7'),risk,TODAY),'—','a milestone already earned on this run has nothing to do');
+
+  const aliveToday=stateWith({completed:{},streaks:{comment:alive(14)}});
+  assert.equal(nextActionForBadge(byId('streak-comment-30'),aliveToday,TODAY),'Log again tomorrow');
+
+  const expired=stateWith({completed:{},streaks:{signin:{current:0,longest:12,startedAt:null,last:addDays(TODAY,-5)}}});
+  assert.equal(nextActionForBadge(byId('streak-signin-7'),expired,TODAY),'Restart today');
+
+  const thisWeek=stateWith({completed:{},weekly:{wishVote:{weeks:['2026-W37','2026-W38','2026-W39'],longest:3}}});
+  assert.equal(nextActionForBadge(byId('weekly-wish-vote'),thisWeek,TODAY),'Logged this week');
+
+  const lapsedWeek=stateWith({completed:{},weekly:{wishVote:{weeks:['2026-W36','2026-W37'],longest:2}}});
+  assert.equal(nextActionForBadge(byId('weekly-wish-vote'),lapsedWeek,TODAY),'Restart this week');
+
+  const done=stateWith({completed:{'photo-finisher':true},streaks:{signin:alive(7)}});
+  assert.equal(nextActionForBadge(byId('photo-finisher'),done,TODAY),'—');
+  assert.equal(nextActionForBadge(byId('streak-signin-7'),done,TODAY),'—');
+
+  const banned=/(aws requires|required by aws|\byou must\b|\bmandatory\b|officially required)/i;
+  const allStates=[fresh,risk,aliveToday,expired,thisWeek,lapsedWeek,done];
+  for(const s of allStates){
+    for(const b of BADGES){
+      const a=nextActionForBadge(b,s,TODAY);
+      assert.ok(typeof a==='string'&&a.length>0,`${b.id} needs a next action`);
+      assert.ok(!banned.test(a),`${b.id} action speaks as a mandate`);
+    }
+  }
 });

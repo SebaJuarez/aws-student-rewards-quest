@@ -174,6 +174,38 @@ export function getNextBestActions(s,today=todayStr()){
   return unique.slice(0,MAX_ACTIONS);
 }
 
+// Per-badge effort estimate for dense list views. null = no honest estimate (community).
+export function estimateMinutes(b){
+  if(b.type==='streak'||b.type==='weekly')return ESTIMATES[b.key]!==undefined?ESTIMATES[b.key]:DEFAULT_MINUTES;
+  if(b.type==='quick'){
+    const m=/(\d+)/.exec(b.dur||'');
+    return m?Number(m[1]):null;
+  }
+  return null;
+}
+
+// The single next step for one badge, derived from the same views the quest engine
+// uses (never re-deriving rules in a view). '—' means nothing is left to do.
+export function nextActionForBadge(b,s,today=todayStr()){
+  if(statusOf(b,s,today)==='completed')return '—';
+  if(b.type==='streak'){
+    const v=streakView(streaksOf(s)[b.key],today);
+    if(v.atRisk)return 'Log today';
+    if(v.loggedToday)return 'Log again tomorrow';
+    if(v.expired)return 'Restart today';
+    return 'Start today';
+  }
+  if(b.type==='weekly'){
+    const v=weekView(weeksOf(s)[b.key],today);
+    if(v.loggedThisWeek)return 'Logged this week';
+    if(v.atRisk)return 'Log this week';
+    if(v.expired)return 'Restart this week';
+    return 'Log this week';
+  }
+  if(b.type==='quick')return 'Open & complete';
+  return 'Open & track';
+}
+
 // Only real, objective risk: a run that dies if today/this week closes untouched.
 // Never lists what merely has not been started - there is nothing to lose yet.
 export function getAtRiskItems(s,today=todayStr()){

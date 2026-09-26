@@ -4,6 +4,7 @@ import {render} from './render.js';
 import {toast} from './toast.js';
 import {openDrawer,closeDrawer} from './drawer.js';
 import {selectHeatDay} from './views/activity.js';
+import {setStatusFilter,setPhaseFilter} from './views/badges.js';
 
 function inCommunityMode(){return getState().mode==='community'}
 
@@ -40,9 +41,14 @@ export function bindEvents(){
     e.target.value='';
   };
 
+  document.addEventListener('change',(e)=>{
+    if(e.target&&e.target.id==='phaseSelect'){setPhaseFilter(e.target.value);render();}
+  });
+
   document.body.addEventListener('click',(e)=>{
     const cell=e.target.closest('[data-heat]'); if(cell){selectHeatDay(cell);return;}
     const open=e.target.closest('[data-open]'); if(open){openDrawer(open.dataset.open);return;}
+    const filter=e.target.closest('[data-filter]'); if(filter){setStatusFilter(filter.dataset.filter);render();return;}
     const start=e.target.closest('#btnStartJourney'); if(start){
       if(confirm('Reset to a fresh 0/21 start and switch to Personal Mode?')){resetAll();render();toast('Fresh start — good luck!');}
       return;

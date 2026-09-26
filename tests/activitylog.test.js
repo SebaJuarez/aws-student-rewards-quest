@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  ACTIVITY_KEYS,activeDayCount,activitySummary,clearActivity,countActivities,
+  ACTIVITY_KEYS,activeDayCount,activeDaysInRange,activitySummary,clearActivity,countActivities,
   dayKeys,daysWith,heatmapModel,hasActivity,logHasWeek,normalizeLog,
   rebuildStreaks,rebuildWeekly,writeActivity
 } from '../src/domain/activityLog.js';
@@ -213,6 +213,16 @@ test('a short run does not paint a lost day',()=>{
   assert.deepEqual(model.byDate[addDays(TODAY,-4)].lost,[],'losing a 6-day run is not marked as a lost streak');
 });
 
+test('a run whose deadline is today is risk, never a lost day',()=>{
+  let log={};
+  for(let i=0;i<7;i++)Object.assign(log,day(addDays(TODAY,-1-i),'signin'));
+  const streaks={signin:{current:7,longest:7,startedAt:addDays(TODAY,-7),last:addDays(TODAY,-1)}};
+  const model=heatmapModel({activityLog:log,streaks},TODAY);
+  assert.deepEqual(model.byDate[TODAY].lost,[],'today is still the deadline, the run has not ended');
+  assert.equal(model.byDate[TODAY].risk,true,'the unlogged run is at risk today');
+  assert.deepEqual(model.byDate[addDays(TODAY,-1)].lost,[],'the last logged day is not a loss');
+});
+
 test('milestone days come from the same timeline the timeline section uses',()=>{
   const s={startedAt:addDays(TODAY,-29)};
   const fromTimeline=timelineModel(s,TODAY).milestones.map(m=>m.date);
@@ -224,4 +234,19 @@ test('milestone days come from the same timeline the timeline section uses',()=>
   assert.equal(model.byDate[addDays(TODAY,-29)].milestone,'Day 1');
   assert.equal(model.byDate[addDays(TODAY,-23)].milestone,'Day 7');
   assert.equal(model.byDate[TODAY].milestone,'Day 30');
+});
+
+test('activeDaysInRange counts days with any activity inside an inclusive range',()=>{
+  const log={
+    '2026-09-20':{signin:true},
+    '2026-09-21':{like:true,comment:true},
+    '2026-09-23':{wishVote:true},
+    '2026-09-30':{signin:true}
+  };
+  assert.equal(activeDaysInRange(log,'2026-09-18','2026-09-25'),3);
+  assert.equal(activeDaysInRange(log,'2026-09-21','2026-09-21'),1,'inclusive on both ends');
+  assert.equal(activeDaysInRange(log,'2026-09-24','2026-09-29'),0,'days without entries never count');
+  assert.equal(activeDaysInRange(log,'2026-09-30','2026-09-18'),0,'reversed ranges are refused');
+  assert.equal(activeDaysInRange(null,'2026-09-18','2026-09-25'),0);
+  assert.equal(activeDaysInRange({},null,'2026-09-25'),0);
 });

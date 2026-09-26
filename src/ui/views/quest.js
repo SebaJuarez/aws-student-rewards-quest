@@ -1,7 +1,5 @@
-import {getNextBestActions,getAtRiskItems} from '../../domain/quest.js';
-import {rewardProgress} from '../../domain/progress.js';
+import {getNextBestActions} from '../../domain/quest.js';
 import {BADGES} from '../../data/badges.js';
-import {formatDate,todayStr} from '../../domain/dates.js';
 
 const GLYPH={risk:'!',start:'▶',weekly:'↻',quick_win:'↗',engagement:'◆'};
 const MARK={risk:'risk',start:'go',weekly:'go'};
@@ -17,21 +15,8 @@ function timeLabel(minutes){
   return minutes===null?'flexible':`~${minutes} min`;
 }
 
-function summaryLine(rp,actions){
-  let line=`next reward: ${rp.next.label} · ${rp.remainingToNext} to go`;
-  if(rp.milestoneDate)line+=` · ${rp.milestoneName} by ${formatDate(rp.milestoneDate)}`;
-  line+=` · ${actions.length} action${actions.length===1?'':'s'}`;
-  return `<div class="quest-sum mono">${line}</div>`;
-}
-
-function riskBlock(items){
-  if(!items.length)return '';
-  const rows=items.map(r=>`
-    <div class="risk-item">
-      <div class="risk-row"><span>${r.label}</span><span class="rval">${r.value}</span></div>
-      <div class="rcopy">${r.copy}</div>
-    </div>`).join('');
-  return `<div class="risk-block"><div class="risk-head">AT RISK</div>${rows}</div>`;
+function summaryLine(n){
+  return `<div class="quest-sum mono">${n} action${n===1?'':'s'} · ranked by what matters most today</div>`;
 }
 
 function actionItem(a){
@@ -49,18 +34,14 @@ function actionItem(a){
 }
 
 export function renderQuest(view){
-  const today=todayStr();
-  const actions=getNextBestActions(view,today);
-  const atRisk=getAtRiskItems(view,today);
-  const rp=rewardProgress(view,today);
-  const head=summaryLine(rp,actions);
+  const actions=getNextBestActions(view);
   if(!actions.length){
-    document.getElementById('questCard').innerHTML=head+`
+    document.getElementById('questCard').innerHTML=`
       <div class="quest-empty">
         <div class="ac-title">ALL CLEAR</div>
-        No streaks are at risk today. Check the roadmap for your next optional quest.
+        No streaks are at risk today. Check Badges for your next optional quest.
       </div>`;
     return;
   }
-  document.getElementById('questCard').innerHTML=head+riskBlock(atRisk)+actions.map(actionItem).join('');
+  document.getElementById('questCard').innerHTML=summaryLine(actions.length)+actions.map(actionItem).join('');
 }

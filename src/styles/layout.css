@@ -12,6 +12,12 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .mode-toggle button{background:var(--bg2);color:var(--dim);border:0;padding:6px 10px}
 .mode-toggle button.active{background:var(--accent-soft);color:var(--accent)}
 
+/* nav */
+.nav{display:flex;gap:3px;align-items:center}
+.nav a{font-family:var(--mono);font-size:12px;color:var(--dim);padding:7px 10px;border-radius:6px;border:1px solid transparent;white-space:nowrap}
+.nav a:hover{color:var(--text);border-color:var(--border);text-decoration:none}
+.nav a.active{color:var(--accent);background:var(--accent-soft);border-color:var(--accent-dim)}
+
 /* hero */
 .hero{padding:32px 0 8px}
 .hero h1{font-size:26px;margin:0 0 4px;font-weight:700;letter-spacing:-.2px}

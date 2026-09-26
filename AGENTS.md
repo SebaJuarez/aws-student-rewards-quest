@@ -14,26 +14,37 @@ affiliated with or endorsed by Amazon Web Services, and must never present itsel
 This constraint is not cosmetic — see §5 before touching any copy about badges, requirements,
 or rewards.
 
-## 2. Current state (v1)
+## 2. Current state (v2 — mini-app navigation)
 
 - Static multi-file app: `index.html` holds the markup; all behavior lives in native ES
   modules under `src/`; all styling lives in split stylesheets under `src/styles/`. No build
   step, no bundler, no dependencies — serve it over http(s) (see §10).
+- It is a **mini-app with six in-app views**, not one long page: `#/overview`, `#/badges`,
+  `#/activity`, `#/timeline`, `#/sources`, `#/settings` (hash routes, optional query e.g.
+  `#/badges?phase=Foundation`). `index.html` contains one static `<div class="view"
+  data-view="...">` wrapper per view plus a header nav (`a[data-nav]`); exactly one wrapper is
+  visible at a time. A single **global disclaimer** sits below all views (never inside one),
+  so it is on every screen; the reset/import/export controls live only in Settings.
 - Folder layout:
-  - `src/app.js` — entry point: wires events, triggers the first render.
+  - `src/app.js` — entry point: wires events, boots the router (`initRouter`), triggers the
+    first render.
   - `src/data/` — static catalog only: badge definitions + phases (`badges.js`), cited
     sources (`sources.js`), reward tiers (`rewards.js`).
   - `src/domain/` — DOM-free logic: `dates.js` (local calendar-date + ISO week helpers),
     `activity.js` (pure streak/week transitions + derived views), `activityLog.js` (the
     activity-log source of truth: normalization, run/week rebuilds, Activity-section models —
     summary, 90-day heatmap), `store.js` (the **only**
-    module allowed to touch `localStorage`), `status.js` (`statusOf` / `completedCount`),
-    `progress.js` (level / milestone / day selectors + `timelineModel`, the single source of
-    journey dates) + `rewardProgress()` (next reward, gap, projected milestone date),
-    `quest.js` (the deterministic Today's Quest rule engine: prioritized actions and
-    at-risk detection).
-  - `src/ui/` — `render.js` (orchestrator), `views/` (one file per page section), `drawer.js`,
-    `toast.js`, `events.js` (all DOM event wiring lives here).
+    module allowed to touch `localStorage`), `status.js` (`statusOf` / `completedCount` /
+    `progressOf` / `isLocked`), `progress.js` (level / milestone / day selectors +
+    `timelineModel`, the single source of journey dates) + `rewardProgress()` (next reward,
+    gap, projected milestone date), `quest.js` (the deterministic Today's Quest rule engine:
+    prioritized actions, at-risk detection, `estimateMinutes`, `nextActionForBadge`).
+  - `src/ui/` — `router.js` (hash router: `parseHash`/`initRouter`/`viewHref`/`applyRoute` —
+    `applyRoute()` is the **only** code that toggles view visibility and nav active state),
+    `render.js` (orchestrator), `views/` (one file per view: `overview.js`, `badges.js`,
+    `activity.js`, `timeline.js`, `sources.js`, `settings.js`, plus shared section builders
+    `header.js`, `hero.js`, `quest.js`, `streaks.js`, `weekly.js`, `rewards.js`),
+    `drawer.js`, `toast.js`, `events.js` (all DOM event wiring lives here).
   - `src/styles/` — `tokens.css` (design tokens), `base.css`, `layout.css`, `components.css`,
     `overlays.css`, `responsive.css`. Link order in `index.html` is cascade order:
     `responsive.css` must stay last (it overrides rules from the other files).
@@ -178,7 +189,12 @@ of it.
   `timelineModel()` (`progress.js`) are the only sources the Activity section and the
   timeline may read — views must not compute day windows, milestone dates or week columns
   themselves. Heatmap cells are `<button>`s with a full `aria-label`; red is reserved for
-  lost/risk, green for done, orange rings for milestones.
+  lost/risk, green for done, orange rings for milestones. **Lost vs risk on the heatmap**:
+  a ≥ 7-day run is painted "lost" on the day *after* its last logged day only once that day
+  has itself passed (`next < today`); while the deadline is still today the run is alive and
+  the cell may show only `risk` — `heatmapModel` must never mark today as a lost day (a
+  regression here double-warns the user with "streak lost" *and* "at risk"; guarded by
+  `tests/activitylog.test.js`).
 - **Today's Quest engine**: `getNextBestActions(state, today)` (`quest.js`) ranks rule-based
   actions through fixed `PRIORITY` tiers — daily streak at risk (100) → long-runway start of an
   unstarted 90-day family (90) → weekly window still open (80) → one-time quick win (70) →
@@ -289,6 +305,14 @@ light mode yet, see backlog).
   diffing. That's fine at this size — don't add a virtual-DOM layer for it without a real
   performance reason. New page sections = new file in `src/ui/views/` + one call in
   `render.js`.
+- Visibility and content are separate: `render()` only paints (it must never touch `hidden`,
+  nav `active` or `aria-current`); `applyRoute()` in `src/ui/router.js` owns view toggling,
+  nav marking, scroll-to-top and keeping the active nav link visible inside the horizontal
+  nav scroller (mobile), and it runs only on route changes (from `app.js`'s
+  `handleRoute`). Badges-list filter state (status chips, phase select) is module state in
+  `views/badges.js`, re-synced from the hash only via `syncBadgesRoute()` on route change —
+  clicking a filter must not rewrite the URL, and links like `#/badges?phase=Foundation`
+  must not be clobbered by a re-render.
 - Respect `prefers-reduced-motion` (already handled globally) if you add any new animation.
 - Keep the split buildless: native ES modules + linked stylesheets, no bundler, no
   `package.json` scripts required to run. If a build step is ever introduced, it must still
@@ -350,7 +374,8 @@ the Today's Quest rule engine (priorities, ranking, at-risk honesty, no-mandate 
 `rewardProgress` projections), v1→v2→v3 migration, import validation, and localStorage
 persistence (via a fake
 `localStorage` in a child process). No DOM/browser test lives in the repo — if you touch UI
-code, verify manually with a static server (§10) or a headless browser; the v3 work was
-validated with a Chrome DevTools Protocol smoke script (render, log/reset, Community Mode,
-quest priorities/AT RISK, import/export, migration, zero console errors) plus desktop/mobile
-screenshots.
+code, verify manually with a static server (§10) or a headless browser; the v3/mini-app work
+was validated with a Chrome DevTools Protocol smoke script (render, six-view navigation +
+active nav state, badge filters, log/reset, Community Mode, quest priorities/AT RISK,
+drawer sections, sources/settings/timeline renders, import/export, migration, zero console
+errors) plus desktop/mobile screenshots.

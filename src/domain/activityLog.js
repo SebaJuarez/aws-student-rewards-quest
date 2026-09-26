@@ -64,6 +64,13 @@ export function activeDayCount(log){
   return Object.keys(log).filter(date=>dayKeys(log,date).length>0).length;
 }
 
+// Active days within an inclusive date range — feeds the timeline's
+// "days logged by then" stats. String comparison is safe for YYYY-MM-DD.
+export function activeDaysInRange(log,from,to){
+  if(!log||!from||!to||from>to)return 0;
+  return Object.keys(log).filter(date=>date>=from&&date<=to&&dayKeys(log,date).length>0).length;
+}
+
 export function writeActivity(log,date,key){
   if(!ACTIVITY_KEYS.includes(key)||!isValidDateStr(date))return log;
   if(hasActivity(log,date,key))return log;
@@ -159,7 +166,9 @@ function runLengthEndingOn(set,date){
 
 // 90 day cells grouped into week columns (Mon-Sun), one state per day:
 // active (with activity count), milestone (Day 1 / 7 / 30 / 90 date), lost (the day a
-// run of >= 7 days ended) and risk (today still has an at-risk streak).
+// run of >= 7 days ended - only once that day has passed; a run whose deadline is
+// today is still alive and shows as risk instead) and risk (today still has an
+// at-risk streak).
 export function heatmapModel(s,today=todayStr()){
   const log=s&&s.activityLog?s.activityLog:{};
   const {milestones}=timelineModel(s,today);
@@ -174,6 +183,7 @@ export function heatmapModel(s,today=todayStr()){
     set.forEach(date=>{
       const next=addDays(date,1);
       if(!next||set.has(next))return;
+      if(next===today)return; // the run ends today at the earliest - that is risk, not loss
       if(runLengthEndingOn(set,date)<LOSS_THRESHOLD)return;
       if(!lostOn[next])lostOn[next]=[];
       lostOn[next].push(key);

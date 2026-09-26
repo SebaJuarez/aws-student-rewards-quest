@@ -314,3 +314,16 @@ export function resetWeek(key){
   save();
 }
 
+// Read-only facts for the Settings view. localStorage access stays in this module.
+export function storageInfo(){
+  let bytes=0;
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    bytes=raw?raw.length:0;
+  }catch(e){}
+  const legacy=LEGACY_STORAGE_KEYS.filter(k=>{
+    try{return localStorage.getItem(k)!==null}catch(e){return false}
+  });
+  return {key:STORAGE_KEY,bytes,version:STATE_VERSION,legacy};
+}
+

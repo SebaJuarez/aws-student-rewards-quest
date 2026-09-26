@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 
 import {BADGES} from '../src/data/badges.js';
 import {defaultState} from '../src/domain/store.js';
-import {completedCount,statusOf} from '../src/domain/status.js';
+import {completedCount,isLocked,progressOf,statusOf} from '../src/domain/status.js';
 import {addDays} from '../src/domain/dates.js';
 
 const TODAY='2026-09-25';
@@ -109,5 +109,46 @@ test('statusOf never returns undefined for any badge shape',()=>{
   BADGES.forEach(b=>{
     const st=statusOf(b,s,TODAY);
     assert.ok(['not_started','active','completed'].includes(st),`${b.id} -> ${st}`);
+  });
+});
+
+test('progressOf renders a dense-list label per badge type',()=>{
+  const s=stateWith({
+    completed:{'hello-world':true},
+    streaks:{signin:aliveStreak(14),like:lapsedStreak(9)},
+    weekly:{wishVote:{weeks:['2026-W37','2026-W38'],longest:2}}
+  });
+  assert.equal(progressOf(badge('streak-signin-30'),s,TODAY),'14/30d');
+  assert.equal(progressOf(badge('streak-signin-7'),s,TODAY),'7/7d','capped at the badge milestone, the run itself is longer');
+  assert.equal(progressOf(badge('streak-like-30'),s,TODAY),'0/30d','a lapsed run reads 0, not the stored counter');
+  assert.equal(progressOf(badge('weekly-wish-vote'),s,TODAY),'2/4w');
+  assert.equal(progressOf(badge('hello-world'),s,TODAY),'1/1');
+  assert.equal(progressOf(badge('first-wish'),s,TODAY),'0/1');
+  assert.equal(progressOf(badge('conversation-starter'),s,TODAY),'0/1');
+  assert.equal(progressOf(badge('first-wish'),null,TODAY),'0/1','a missing state must not throw');
+});
+
+test('isLocked only gates later streak milestones behind smaller unearned ones',()=>{
+  const fresh=stateWith({completed:{}});
+  assert.equal(isLocked(badge('streak-signin-7'),fresh,TODAY),false,'the first milestone of a family is never locked');
+  assert.equal(isLocked(badge('streak-signin-30'),fresh,TODAY),true);
+  assert.equal(isLocked(badge('streak-signin-90'),fresh,TODAY),true);
+  assert.equal(isLocked(badge('streak-like-90'),fresh,TODAY),true);
+
+  const sevenDone=stateWith({completed:{},overrides:{'streak-signin-7':'completed'}});
+  assert.equal(isLocked(badge('streak-signin-30'),sevenDone,TODAY),false,'earned 7-day unlocks the 30-day milestone');
+  assert.equal(isLocked(badge('streak-signin-90'),sevenDone,TODAY),true,'the 30-day step still gates the 90-day one');
+
+  const lapsed=stateWith({completed:{},streaks:{signin:lapsedStreak(12)}});
+  assert.equal(isLocked(badge('streak-signin-30'),lapsed,TODAY),true,'a dead run still gates the 30-day until the 7-day is earned');
+  assert.equal(isLocked(badge('streak-signin-7'),lapsed,TODAY),false);
+  const running=stateWith({completed:{},streaks:{signin:aliveStreak(4)}});
+  assert.equal(isLocked(badge('streak-signin-30'),running,TODAY),false,'a live run makes the milestone active, not locked');
+  const active=stateWith({completed:{},streaks:{signin:aliveStreak(7)}});
+  assert.equal(isLocked(badge('streak-signin-30'),active,TODAY),false,'an active milestone is not locked');
+
+  const oneTime=stateWith({completed:{}});
+  BADGES.filter(b=>b.type!=='streak').forEach(b=>{
+    assert.equal(isLocked(b,oneTime,TODAY),false,`${b.id} is a one-time or weekly badge - never locked`);
   });
 });

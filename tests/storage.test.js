@@ -171,3 +171,13 @@ test('setOverride, setNote, setMode and resetAll persist through save()',()=>{
   assert.deepEqual(fresh.weekly.wishVote.weeks,[]);
   assert.equal(saved().startedAt,fresh.startedAt);
 });
+
+test('storageInfo reports the live key, its size and surviving legacy backups',()=>{
+  const info=store.storageInfo();
+  assert.equal(info.key,'aws-student-rewards.quest.v3');
+  assert.equal(info.version,3);
+  assert.ok(info.bytes>0);
+  assert.equal(info.bytes,storage.getItem('aws-student-rewards.quest.v3').length);
+  assert.ok(info.legacy.includes('aws-student-rewards.quest.v1'),'the v1 backup is never deleted');
+  assert.ok(!info.legacy.includes('aws-student-rewards.quest.v2'),'no v2 backup was seeded in this test');
+});
