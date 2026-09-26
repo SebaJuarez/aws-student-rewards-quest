@@ -2,13 +2,22 @@
   color-scheme: dark;
   --bg:#0a0d12; --bg2:#11161d; --card:#151b23; --card-hi:#1a212b;
   --border:#232b36; --border-soft:#1a212b;
-  --text:#e7edf3; --dim:#8f9aa6; --faint:#576270;
+  --text:#e7edf3; --dim:#8f9aa6; --faint:#78828f;
   --accent:#ff9900; --accent-dim:#c9770a; --accent-soft:rgba(255,153,0,.12);
   --green:#3fb950; --green-soft:rgba(63,185,80,.13);
   --yellow:#d9a441; --yellow-soft:rgba(217,164,65,.13);
   --red:#f0605a; --red-soft:rgba(240,96,90,.13);
   --locked:#3a424d;
+
+  --sans:'Open Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
   --mono:'IBM Plex Mono',ui-monospace,Consolas,monospace;
-  --sans:'IBM Plex Sans',system-ui,sans-serif;
+
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:20px; --s6:24px; --s8:32px; --s10:40px;
+  --r1:4px; --r2:6px; --r3:8px; --r4:12px; --rp:999px;
+
+  --fs-micro:11px; --fs-sm:12px; --fs-md:13px; --fs-base:14px; --fs-lg:16px; --fs-xl:18px; --fs-h1:24px;
+  --shadow-overlay:0 8px 32px rgba(0,0,0,.45);
+  --t-fast:.15s ease; --t-med:.25s ease;
+
   padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
 }

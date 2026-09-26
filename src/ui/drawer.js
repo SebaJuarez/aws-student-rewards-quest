@@ -84,8 +84,8 @@ export function openDrawer(id){
     ${progressLines(b,s,today)}
     <div class="sub-cap mono">manual status override</div>
     <div class="status-btns" role="group" aria-label="Manual status override">
-      ${['not_started','active','completed'].map(v=>`<button data-setstatus="${v}" class="${st===v?'on':''}"${readOnly?' disabled':''}>${v.replace('_',' ')}</button>`).join('')}
-      <button data-setstatus="clear"${readOnly?' disabled':''}>clear override</button>
+      ${['not_started','active','completed'].map(v=>`<button data-setstatus="${v}" class="${st===v?'on':''}"${readOnly?' disabled':''}>${v==='not_started'?'Not started':v[0].toUpperCase()+v.slice(1)}</button>`).join('')}
+      <button data-setstatus="clear"${readOnly?' disabled':''}>Clear override</button>
     </div>
     ${readOnly?'<div class="verif">Community Mode shows example progress — switch to Personal Mode to record activity or overrides.</div>':''}
     <label>Next action</label>

@@ -6,7 +6,7 @@
 <title>AWS Student Rewards Quest</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="./src/styles/tokens.css">
 <link rel="stylesheet" href="./src/styles/base.css">
 <link rel="stylesheet" href="./src/styles/layout.css">
@@ -19,7 +19,7 @@
   <div class="top-inner">
     <div class="brand">
       <div class="mark">Q</div>
-      <div><div class="t1">AWS Student Rewards Quest</div><div class="t2">community tracker · v1</div></div>
+      <div><div class="t1">AWS Student Rewards Quest</div><div class="t2">community tracker · v2</div></div>
     </div>
     <nav class="nav" aria-label="Views">
       <a href="#/overview" data-nav="overview">Overview</a>
@@ -37,24 +37,32 @@
 
   <div class="view" data-view="overview">
     <section class="hero">
-      <h1>21 badges. 90 days. One roadmap.</h1>
-      <p class="sub">A community-built tracker for AWS Builder Center's Student Rewards program — not an official AWS product.</p>
+      <div class="hero-copy">
+        <div class="hero-eyebrow">AWS Builder Center · Student Rewards</div>
+        <h1>21 badges. 90 days. One roadmap.</h1>
+        <p class="sub">A community-built tracker for the Student Rewards program — not an official AWS product.</p>
+      </div>
       <div class="progress-row">
         <svg class="ring" viewBox="0 0 100 100" id="ringSvg" aria-hidden="true"></svg>
-        <div>
-          <div class="bar-outer"><div class="bar-inner" id="barInner" style="width:0%"></div></div>
+        <div class="hero-bar">
+          <div class="bar-outer bar-rail">
+            <div class="bar-inner" id="barInner" style="width:0%"></div>
+            <i class="rail-tick" style="left:33.33%"></i>
+            <i class="rail-tick" style="left:66.66%"></i>
+          </div>
+          <div class="rail-labels" aria-hidden="true"><span style="left:33.33%">7</span><span style="left:66.66%">14</span><span style="left:100%">21</span></div>
           <div class="stat-line"><span id="progressLabel">0 / 21 badges</span><span id="progressPct">0%</span></div>
           <div class="chips">
-            <div class="chip"><div class="k">Level</div><div class="v" id="chipLevel">—</div></div>
-            <div class="chip"><div class="k">Next milestone</div><div class="v" id="chipMilestone">—</div></div>
-            <div class="chip"><div class="k">Day</div><div class="v" id="chipDay">—</div></div>
+            <div class="chip"><span class="k">Level</span><span class="v" id="chipLevel">—</span></div>
+            <div class="chip"><span class="k">Next milestone</span><span class="v" id="chipMilestone">—</span></div>
+            <div class="chip"><span class="k">Day</span><span class="v" id="chipDay">—</span></div>
           </div>
         </div>
       </div>
     </section>
 
     <section class="block">
-      <h2>Today's Quest <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— recommended next steps, not AWS requirements</span></h2>
+      <h2>Today's Quest <span class="h2-note">— recommended next steps, not AWS requirements</span></h2>
       <div class="quest-card" id="questCard"></div>
     </section>
 
@@ -69,12 +77,12 @@
     </section>
 
     <section class="block">
-      <h2>Weekly Streaks <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— ISO calendar weeks</span></h2>
+      <h2>Weekly Streaks <span class="h2-note">— ISO calendar weeks</span></h2>
       <div class="streak-grid" id="weekly"></div>
     </section>
 
     <section class="block">
-      <h2>Roadmap Preview <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— recommended path, not an official AWS sequence</span></h2>
+      <h2>Quest Map <span class="h2-note">— recommended path through the 6 phases, not an official AWS sequence</span></h2>
       <div id="roadmapPreview"></div>
     </section>
 
@@ -85,14 +93,14 @@
     </section>
 
     <section class="block">
-      <h2>Recent Activity <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— from your log</span></h2>
+      <h2>Recent Activity <span class="h2-note">— from your log</span></h2>
       <div id="recentActivity"></div>
     </section>
   </div>
 
   <div class="view" data-view="badges" hidden>
     <section class="block">
-      <h2>Badges <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— all 21 in official order</span></h2>
+      <h2>Badges <span class="h2-note">— all 21 in official order</span></h2>
       <div class="filters" id="badgeFilters"></div>
       <div class="badge-list" id="badgeList"></div>
     </section>
@@ -100,14 +108,14 @@
 
   <div class="view" data-view="activity" hidden>
     <section class="block">
-      <h2>Activity <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— what you actually logged</span></h2>
+      <h2>Activity <span class="h2-note">— what you actually logged</span></h2>
       <div id="activity"></div>
     </section>
   </div>
 
   <div class="view" data-view="timeline" hidden>
     <section class="block">
-      <h2>90-Day Timeline <span style="text-transform:none;letter-spacing:0;color:var(--faint)">— milestones from your start date</span></h2>
+      <h2>90-Day Timeline <span class="h2-note">— milestones from your start date</span></h2>
       <div class="tl-meta mono" id="tlMeta"></div>
       <div class="timeline" id="timeline"></div>
       <div id="tlFoot"></div>
@@ -158,7 +166,7 @@
         </div>
         <div class="set-card">
           <div class="set-head">About</div>
-          <p class="set-desc">AWS Student Rewards Quest v1 — an independent, community-built tracker. Vanilla HTML/CSS/JS, zero dependencies, no server, no tracking. Not affiliated with or endorsed by Amazon Web Services.</p>
+          <p class="set-desc">AWS Student Rewards Quest v2 — an independent, community-built tracker. Vanilla HTML/CSS/JS, zero dependencies, no server, no tracking. Not affiliated with or endorsed by Amazon Web Services.</p>
         </div>
       </div>
     </section>

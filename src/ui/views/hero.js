@@ -1,18 +1,27 @@
 import {completedCount} from '../../domain/status.js';
 import {levelFor,nextMilestone,dayNumber} from '../../domain/progress.js';
 
-function ringSVG(pct){
-  const r=42,c=2*Math.PI*r,off=c-(pct/100)*c;
-  return `<circle cx="50" cy="50" r="${r}" fill="none" stroke="#232b36" stroke-width="8"/>
-  <circle cx="50" cy="50" r="${r}" fill="none" stroke="#ff9900" stroke-width="8" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 50 50)"/>
-  <text x="50" y="46" text-anchor="middle" font-size="20" font-weight="600">${Math.round(pct)}%</text>
-  <text x="50" y="62" text-anchor="middle" font-size="9" fill="#8f9aa6">complete</text>`;
+const R=42, C=2*Math.PI*R;
+
+function ensureRing(svg){
+  if(svg.dataset.ready)return;
+  svg.innerHTML=`<circle class="ring-track" cx="50" cy="50" r="${R}" fill="none" stroke="#232b36" stroke-width="7"/>
+  <circle class="ring-fill" cx="50" cy="50" r="${R}" fill="none" stroke="#ff9900" stroke-width="7" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${C}" transform="rotate(-90 50 50)"/>
+  <text x="50" y="56" text-anchor="middle" font-size="24" font-weight="600"></text>`;
+  svg.dataset.ready='1';
 }
 
 export function renderHero(view){
   const cc=completedCount(view), pct=cc/21*100;
-  document.getElementById('ringSvg').innerHTML=ringSVG(pct);
-  document.getElementById('barInner').style.width=pct+'%';
+  const svg=document.getElementById('ringSvg');
+  ensureRing(svg);
+  const fill=svg.querySelector('.ring-fill');
+  fill.style.strokeDashoffset=C-(pct/100)*C;
+  fill.classList.toggle('done',cc>=21);
+  svg.querySelector('text').textContent=Math.round(pct)+'%';
+  const bar=document.getElementById('barInner');
+  bar.style.width=pct+'%';
+  bar.classList.toggle('done',cc>=21);
   document.getElementById('progressLabel').textContent=`${cc} / 21 badges`;
   document.getElementById('progressPct').textContent=Math.round(pct)+'%';
   document.getElementById('chipLevel').textContent=levelFor(cc);

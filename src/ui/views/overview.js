@@ -1,11 +1,33 @@
-import {BADGES,PHASES} from '../../data/badges.js';
-import {statusOf} from '../../domain/status.js';
+import {BADGES} from '../../data/badges.js';
+import {isLocked,statusOf} from '../../domain/status.js';
 import {getAtRiskItems} from '../../domain/quest.js';
 import {rewardProgress} from '../../domain/progress.js';
 import {activitySummary} from '../../domain/activityLog.js';
 import {formatDate,todayStr} from '../../domain/dates.js';
 
 const KEY_LABEL={signin:'Sign-in',like:'Like',comment:'Comment',wishVote:'Wish',articlePublish:'Article'};
+
+const STAGES=[
+  {name:'Foundation',phases:['Foundation']},
+  {name:'Consistency',phases:['7-Day Streaks','4-Week Consistency','30-Day Streaks']},
+  {name:'Community',phases:['Community Engagement']},
+  {name:'Endgame',phases:['90-Day Endgame']}
+];
+
+function phaseModel(ph,view,today){
+  const items=BADGES.filter(b=>b.phase===ph);
+  const done=items.filter(b=>statusOf(b,view,today)==='completed').length;
+  const live=items.some(b=>statusOf(b,view,today)==='active');
+  return {ph,items,done,live,pct:Math.round(done/items.length*100)};
+}
+
+function stageModel(stg,view,today){
+  const phases=stg.phases.map(ph=>phaseModel(ph,view,today));
+  const items=phases.flatMap(m=>m.items);
+  const done=items.filter(b=>statusOf(b,view,today)==='completed').length;
+  const live=items.some(b=>statusOf(b,view,today)==='active');
+  return {stg,phases,done,live,total:items.length};
+}
 
 function riskPanel(items){
   if(!items.length){
@@ -37,18 +59,29 @@ export function renderStatusStrip(view){
 
 export function renderRoadmapPreview(view){
   const today=todayStr();
-  const rows=PHASES.map(ph=>{
-    const items=BADGES.filter(b=>b.phase===ph);
-    const done=items.filter(b=>statusOf(b,view,today)==='completed').length;
-    const live=items.some(b=>statusOf(b,view,today)==='active');
-    const pct=Math.round(done/items.length*100);
-    return `<a class="phase-preview" href="#/badges?phase=${encodeURIComponent(ph)}">
-      <div class="phase-head"><div class="dot ${done===items.length?'done':(live?'live':'')}"></div><div class="name">${ph}</div><div class="count">${done}/${items.length}</div></div>
-      <div class="bar-outer"><div class="bar-inner" style="width:${pct}%"></div></div>
-    </a>`;
+  const stages=STAGES.map(stg=>stageModel(stg,view,today));
+  const html=stages.map(sm=>{
+    const state=sm.done===sm.total?'done':(sm.live||sm.done>0?'live':'todo');
+    const phases=sm.phases.map(pm=>{
+      const nodes=pm.items.map(b=>{
+        const st=statusOf(b,view,today);
+        const locked=isLocked(b,view,today);
+        return `<span class="bnode ${locked?'locked':st}" title="${b.name}">${String(b.n).padStart(2,'0')}</span>`;
+      }).join('');
+      return `<a class="phase-preview" href="#/badges?phase=${encodeURIComponent(pm.ph)}">
+        <div class="phase-head"><div class="dot ${pm.done===pm.items.length?'done':(pm.live?'live':'')}"></div><div class="name">${pm.ph}</div><div class="count">${pm.done}/${pm.items.length}</div></div>
+        <div class="phase-nodes" aria-hidden="true">${nodes}</div>
+        <div class="bar-outer"><div class="bar-inner${pm.pct===100?' done':''}" style="width:${pm.pct}%"></div></div>
+      </a>`;
+    }).join('');
+    return `<div class="qstage">
+      <span class="qnode ${state}" aria-hidden="true"></span>
+      <div class="qstage-head"><span class="qstage-name">${sm.stg.name}</span><span class="rule"></span><span class="qstage-count">${sm.done}/${sm.total}</span></div>
+      <div class="qstage-body">${phases}</div>
+    </div>`;
   }).join('');
   document.getElementById('roadmapPreview').innerHTML=`
-    <div class="preview-grid">${rows}</div>
+    <div class="preview-grid quest-map">${html}</div>
     <div class="view-link-row"><a class="view-link" href="#/badges">Open all 21 badges →</a></div>`;
 }
 

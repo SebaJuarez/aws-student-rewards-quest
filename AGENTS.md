@@ -270,17 +270,29 @@ light mode yet, see backlog).
 
 - Palette (CSS custom properties at `:root` in `src/styles/tokens.css`):
   `--bg:#0a0d12` `--bg2:#11161d` `--card:#151b23` `--border:#232b36`
-  `--text:#e7edf3` `--dim:#8f9aa6` `--faint:#576270`
+  `--text:#e7edf3` `--dim:#8f9aa6` `--faint:#78828f`
   `--accent:#ff9900` (AWS orange — used as a highlight, never a fill) `--green:#3fb950`
   `--yellow:#d9a441` `--red:#f0605a` `--locked:#3a424d`
-- Type: IBM Plex Sans for body/UI, IBM Plex Mono for numbers, labels, and status pills
+- Type: **Open Sans** for body/UI (Cloudscape's face — AWS-console familiarity without copying
+  AWS assets), **IBM Plex Mono** for numbers, IDs, dates, counters, and status labels
   (console/developer-tooling feel). Loaded from Google Fonts — the only external network
-  dependency.
-- Icons are plain Unicode glyphs (✓ ▶ ⚠ ↗ ✕) styled with CSS, not an icon library. Keep it
-  that way unless a real need for illustrative icons appears; it fits the terminal aesthetic
-  and avoids an extra dependency.
-- Status colors: green = completed, orange = active/available, gray = not started, red =
-  risk/streak-loss only. Don't repurpose red for anything else.
+  dependency. Sentence text stays ≥ 12px and UI labels ≥ 11px (packed heatmap chrome may sit
+  at 10.5px); don't shrink type to fit more content.
+- Spacing & shape: a 4px scale (`--s1`–`--s10` = 4/8/12/16/20/24/32/40) and radius tokens
+  (`--r1` 4, `--r2` 6, `--r3` 8, `--r4` 12, `--rp` pill) live in `tokens.css` — prefer them
+  over ad-hoc pixel values in new CSS.
+- Icons are plain Unicode glyphs (✓ ▶ ⚠ ○ ⊘ ↗ ✕ ↻ ◆) styled with CSS, not an icon library.
+  Keep it that way unless a real need for illustrative icons appears; it fits the terminal
+  aesthetic and avoids an extra dependency.
+- Status language: every status is **glyph + word + color**, never color alone —
+  ✓ Completed (green), ▶ Active (orange), ○ Available (gray outline), · Not started (manual
+  override only), ⚠ At risk (red), ⊘ Locked (gray). Status colors: green = completed,
+  orange = active, gray = available/not started/locked, red = risk/streak-loss only. Don't
+  repurpose red for anything else.
+- Motion: only state-driven transitions (progress bar/ring, drawer, toast, hover/focus, the
+  view fade-in) — no entrance animations keyed to `render()`, which repaints fully on every
+  change and would replay them falsely; everything respects the global
+  `prefers-reduced-motion` kill-switch in `base.css`.
 - Numbered badge markers (`01`–`21`) are legitimate here because the badges genuinely have an
   official sequence number — don't remove them, and don't add numbering elsewhere without the
   same justification.

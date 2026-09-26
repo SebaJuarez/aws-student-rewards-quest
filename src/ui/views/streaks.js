@@ -11,7 +11,7 @@ export function renderStreaks(view){
     const lastLabel=v.last?`Last: ${formatDate(v.last)}`:'Not started yet';
     return `<div class="streak-card">
       <div class="streak-top"><span class="name">${SL[k]} streak</span><span class="nums mono">${v.current} / 90</span></div>
-      <div class="bar-outer"><div class="bar-inner" style="width:${pct}%"></div></div>
+      <div class="bar-outer bar-rail"><div class="bar-inner${v.current>=90?' done':''}" style="width:${pct}%"></div>${v.longest>0?`<i class="rail-mark" aria-hidden="true" title="Longest: ${v.longest} days" style="left:${Math.min(100,v.longest/90*100)}%"></i>`:''}</div>
       <div class="streak-sub"><span>Longest: ${v.longest}d</span><span>${lastLabel}</span></div>
       ${v.atRisk?`<div class="risk-flag">⚠ Your ${SL[k].toLowerCase()} streak is at risk today</div>`:''}
       ${v.expired?`<div class="risk-flag">⚠ Streak lapsed — log today to restart from 1</div>`:''}

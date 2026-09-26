@@ -1,16 +1,16 @@
 @media(max-width:640px){
-  .progress-row{grid-template-columns:1fr}
-  .ring{margin:0 auto}
+  .hero{grid-template-columns:1fr;gap:var(--s4);padding-top:var(--s5)}
+  .progress-row{grid-template-columns:56px minmax(0,1fr);gap:var(--s3)}
+  .ring{width:56px;height:56px}
   .timeline{grid-template-columns:repeat(2,1fr)}
   .brand .t2{display:none}
 
-  .top-inner{flex-wrap:wrap;gap:10px}
+  .top-inner{flex-wrap:wrap;gap:var(--s3)}
   .nav{width:100%;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;border-top:1px solid var(--border);padding-top:9px}
   .nav::-webkit-scrollbar{display:none}
   .nav a{flex:0 0 auto}
 
   .strip{grid-template-columns:1fr}
-  .preview-grid{grid-template-columns:1fr}
   .settings{grid-template-columns:1fr}
 
   .filters{flex-direction:column;align-items:stretch}
@@ -19,7 +19,7 @@
   .phase-sel{justify-content:space-between}
 
   .badge-hrow{display:none}
-  .badge-row{grid-template-columns:24px minmax(0,1fr);gap:3px 10px;padding:9px 10px}
+  .badge-row{grid-template-columns:24px minmax(0,1fr);gap:3px 10px;padding:var(--s2) 10px}
   .badge-row .num{grid-column:1;grid-row:1/3;align-self:start;margin-top:3px}
   .badge-row .name{grid-column:2;grid-row:1}
   .badge-row .bmeta{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;grid-column:2;grid-row:2}
@@ -29,8 +29,12 @@
 @media(max-width:640px){
   .heat-wrap{grid-template-columns:1fr}
   .heat-scroll,.heat-detail,.heat-legend{grid-row:auto;grid-column:auto}
-  .act-hrow,.act-row{grid-template-columns:54px repeat(5,1fr);gap:5px}
-  .act-row{padding:7px 9px}
+  .act-hrow,.act-row{grid-template-columns:54px repeat(5,1fr);gap:var(--s1)}
+  .act-row{padding:var(--s2) 9px}
   .act-today-head{font-size:11px}
   .apill{padding:6px 11px;font-size:11.5px}
+  .quest-card{padding:var(--s4)}
+  .block h2{flex-wrap:wrap;row-gap:var(--s1)}
+  .block h2::after{display:none}
+  .block h2 .h2-note{flex:1 0 100%}
 }

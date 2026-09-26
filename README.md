@@ -55,7 +55,7 @@ plan.
 ## Tech stack
 
 HTML, CSS, and vanilla JavaScript as native ES modules — no build step, no framework, no
-dependencies besides a Google Fonts request (IBM Plex Sans / IBM Plex Mono). The code lives
+dependencies besides a Google Fonts request (Open Sans / IBM Plex Mono). The code lives
 in small, single-purpose modules under `src/` and ships as plain static files, so it runs
 anywhere that serves static files: a static host, GitHub Pages, or a local server. See
 [`AGENTS.md`](./AGENTS.md) for the full rationale, folder conventions, data model, and refactor

@@ -1,15 +1,25 @@
 import {BADGES,PHASES} from '../../data/badges.js';
 import {isLocked,progressOf,statusOf} from '../../domain/status.js';
 import {estimateMinutes,nextActionForBadge} from '../../domain/quest.js';
+import {streakView,weekView} from '../../domain/activity.js';
 import {todayStr} from '../../domain/dates.js';
 
 const STATUS_FILTERS=[
   {id:'all',label:'All'},
   {id:'available',label:'Available'},
-  {id:'in_progress',label:'In progress'},
+  {id:'in_progress',label:'Active'},
   {id:'completed',label:'Completed'},
   {id:'locked',label:'Locked'}
 ];
+
+const PILL={
+  completed:{cls:'completed',g:'✓',label:'Completed'},
+  active:{cls:'active',g:'▶',label:'Active'},
+  at_risk:{cls:'at_risk',g:'⚠',label:'At risk'},
+  available:{cls:'available',g:'○',label:'Available'},
+  not_started:{cls:'not_started',g:'·',label:'Not started'},
+  locked:{cls:'locked',g:'⊘',label:'Locked'}
+};
 
 let statusFilter='all';
 let phaseFilter='all';
@@ -41,6 +51,23 @@ function matches(f,st,locked){
   return true;
 }
 
+function atRiskBadge(b,view,today){
+  if(view.overrides&&view.overrides[b.id])return false;
+  if(b.type==='streak')return streakView(view.streaks?view.streaks[b.key]:null,today).atRisk;
+  if(b.type==='weekly')return weekView(view.weekly?view.weekly[b.key]:null,today).atRisk;
+  return false;
+}
+
+function pillFor(m,view,today){
+  if(m.locked)return PILL.locked;
+  const o=view.overrides&&view.overrides[m.b.id];
+  if(o)return PILL[o]||PILL.not_started;
+  if(m.st==='completed')return PILL.completed;
+  if(atRiskBadge(m.b,view,today))return PILL.at_risk;
+  if(m.st==='active')return PILL.active;
+  return PILL.available;
+}
+
 function effortFor(b){
   if(b.type==='quick')return b.dur||'—';
   if(b.type==='streak')return `~${estimateMinutes(b)} min/day`;
@@ -48,19 +75,17 @@ function effortFor(b){
   return '—';
 }
 
-function rowHTML(m){
-  const pill=m.locked?'locked':m.st;
-  const pillText=m.locked?'locked':m.st.replace('_',' ');
-  return `<button class="badge-row ${m.st}" data-open="${m.b.id}">
+function rowHTML(m,view,today){
+  const p=pillFor(m,view,today);
+  return `<button class="badge-row ${m.st}${p.cls==='at_risk'?' at_risk':''}" data-open="${m.b.id}">
     <span class="num">${String(m.b.n).padStart(2,'0')}</span>
     <span class="name">${m.b.name}</span>
     <span class="bmeta">
       <span class="bphase">${m.b.phase}</span>
-      <span class="status-pill ${pill}">${pillText}</span>
+      <span class="status-pill ${p.cls}"><i aria-hidden="true">${p.g}</i>${p.label}</span>
       <span class="bprog mono">${m.progress}</span>
       <span class="bnext">${m.next}</span>
       <span class="btime mono">${effortFor(m.b)}</span>
-      <span class="bsrc" title="Requirement wording: community interpretation — see Sources"><span class="tag community">comm</span></span>
     </span>
   </button>`;
 }
@@ -99,7 +124,7 @@ export function renderBadges(view){
     </select></label>`;
 
   const head=`<div class="badge-hrow" aria-hidden="true">
-    <span>#</span><span>Badge</span><span>Phase</span><span>Status</span><span>Progress</span><span>Next action</span><span>Effort</span><span>Source</span>
+    <span>#</span><span>Badge</span><span>Phase</span><span>Status</span><span>Progress</span><span>Next action</span><span>Effort</span>
   </div>`;
-  document.getElementById('badgeList').innerHTML=head+(rows.length?rows.map(rowHTML).join(''):emptyHTML());
+  document.getElementById('badgeList').innerHTML=head+(rows.length?rows.map(m=>rowHTML(m,view,today)).join(''):emptyHTML());
 }
