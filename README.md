@@ -7,11 +7,40 @@ can I do today, what unlocks next, and what am I at risk of losing?*
 > **Not affiliated with or endorsed by Amazon Web Services.** This is an independent,
 > community-built tracker based on publicly available AWS Builder Center guidance.
 
-**[Live demo →](#)** _(paste your published/hosted link here once you deploy it)_
+**[Live demo →](https://sebajuarez.github.io/aws-student-rewards-quest/)**
 
-![status](https://img.shields.io/badge/status-v1-orange) ![no backend](https://img.shields.io/badge/backend-none-blue) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+![status](https://img.shields.io/badge/status-v2-orange) ![no backend](https://img.shields.io/badge/backend-none-blue) ![no tracking](https://img.shields.io/badge/tracking-none-green) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
 
 ---
+
+## Screenshots
+
+**Overview** — where you are, what's at risk, what to do today:
+
+![Overview](docs/overview.png)
+
+**Badge detail drawer** — the AWS requirement (with a *Verification needed* note when AWS
+hasn't published exact wording), the community synthesis with a **View source** row per
+cited source, the recommended path, your progress, and your notes:
+
+![Badge drawer with source citations](docs/drawer-sources.png)
+
+**Sources & methodology** — official AWS sources, community sources (each labeled with
+what it was used for), and this tracker's own recommendation rules, kept apart:
+
+![Sources and methodology](docs/sources.png)
+
+**Badges** — all 21, filterable by status and phase:
+
+![Badges list](docs/badges.png)
+
+**Activity** — today's log, the last 7 days, a 90-day heatmap:
+
+![Activity](docs/activity.png)
+
+**Mobile**:
+
+![Overview on mobile](docs/overview-mobile.png)
 
 ## What it does
 
@@ -25,10 +54,11 @@ can I do today, what unlocks next, and what am I at risk of losing?*
 - **Today's Quest**: computes the 3–5 highest-value actions to take right now (streaks at
   risk first, then long-duration streaks worth starting on day 1, then quick wins), with an
   explicit **AT RISK** block for whatever you can still lose before the day or the week closes.
-- **Badges**: a dense, filterable list of all 21 badges (available / in progress /
-  completed / locked, by phase); opening one shows a detail drawer with the AWS requirement
-  (labeled as community interpretation), recommended path, your progress, the next action,
-  sources, and your own notes.
+- **Badges**: a dense, filterable list (available / in progress / completed / locked, by
+  phase); the detail drawer keeps four layers strictly separate — the **AWS requirement**
+  (official facts or a *Verification needed* note), the **community synthesis** (the
+  paraphrased requirement plus a *View source* row showing exactly which sources fed it),
+  the **recommended path**, and **your progress** with overrides and notes.
 - **Activity**: today's log, the last 7 days, a 90-day heatmap and recent entries —
   the day-by-day record of truth that streaks and weeks are rebuilt from.
 - **Streaks**: sign-in, like, and comment activity tracked as continuous counters, with the
@@ -38,12 +68,14 @@ can I do today, what unlocks next, and what am I at risk of losing?*
 - **Reward tracker**: 7 badges → $10 AWS Credits, 14 badges → +$20 credits, 21 badges → $100
   AWS Foundational Certification exam voucher (confirmed against the official AWS News Blog
   announcement).
-- **Sources & Methodology**: every badge links back to the community posts it was
-  synthesized from, clearly labeled `official` vs `community`, with a "verification needed"
-  note wherever AWS hasn't published exact wording.
-- **Personal / Community mode** toggle, manual status overrides, per-badge notes,
-  export/import as JSON, storage info, and a full reset (in Settings) — all stored in your
-  browser's `localStorage`. No account, no server, no data leaves your machine.
+- **Sources & methodology**: every source listed with author, date, link, and what it was
+  used for, split into *Official AWS*, *Community Builder Center*, and this tracker's own
+  rules — plus a *Requirements last checked* date.
+- **Personal / Community mode**: Community Mode is a read-only demo — logging, reset and
+  import are disabled there so example progress can never mix with your own. Per-badge
+  status overrides, per-badge notes, export/import as JSON, storage info, and a full reset
+  live in Settings. Everything stays in your browser's `localStorage`: no account, no
+  server, no data leaves your machine.
 
 ## Why it exists
 
@@ -51,6 +83,24 @@ AWS's own program page tells you *that* the badges exist. It doesn't tell you wh
 start on day one, which streaks quietly reset your progress if you miss a day, or how the
 first 6 quick-win badges relate to the 90-day endgame. This tool turns that into an actual
 plan.
+
+## How this roadmap was built
+
+Four kinds of statements, never mixed:
+
+1. **AWS requirement** — facts from official AWS sources only (the AWS News Blog
+   announcement and the AWS Builder Center FAQ), stated as fact and cited inline. Anything
+   AWS has not published is marked **Verification needed** instead of being guessed.
+2. **Community synthesis** — every badge requirement is an original paraphrase synthesized
+   from individual-author Builder Center posts. Each badge's drawer lists exactly which
+   sources were used and what each one contributed.
+3. **Recommended path** — this tracker's own rules (phase grouping, Today's Quest
+   priorities, at-risk definition). Not AWS guidance, and not community claims.
+4. **Your progress** — your own logged data only, stored locally in your browser.
+
+No article text, marketing copy, or images are copied from any source. The requirement
+wording is re-checked periodically; the current pass is dated in the app under
+**Sources → Requirements last checked**.
 
 ## Tech stack
 
@@ -81,7 +131,12 @@ cd aws-student-rewards-quest
 npx serve .             # or: python3 -m http.server 8080
 ```
 
-Then open the printed localhost URL.
+Then open the printed localhost URL. The live demo above runs the exact same static files
+on GitHub Pages.
+
+Tests are dependency-free (`npm test`, Node's built-in test runner — no install needed) and
+cover the domain logic: streak/week rules, migration, quest priorities, and source
+integrity.
 
 ## Project status & roadmap
 
@@ -94,9 +149,11 @@ before opening a PR or pointing an AI coding agent at this repo.
 
 ## Sources
 
-Built from the official AWS announcement plus publicly available AWS Builder Center community
-guides, synthesized and paraphrased — not copied. Full list with authors, dates, and links is
-inside the app's **Sources & Methodology** section, and in [`AGENTS.md`](./AGENTS.md#5-source-integrity-rules-hard-constraints-not-style-preferences).
+Built from the official AWS announcement and the AWS Builder Center FAQ, plus publicly
+available AWS Builder Center community guides — synthesized and paraphrased, never copied.
+The full list with authors, dates, links and per-source usage is inside the app's
+**Sources** view, and the integrity rules live in
+[`AGENTS.md`](./AGENTS.md#5-source-integrity-rules-hard-constraints-not-style-preferences).
 
 ## Contributing
 
