@@ -1,11 +1,13 @@
 import {BADGES,SL} from '../data/badges.js';
-import {SOURCES,COMMUNITY_SRC} from '../data/sources.js';
+import {SOURCES} from '../data/sources.js';
 import {statusOf} from '../domain/status.js';
 import {getViewState,setOverride,clearOverride,setNote} from '../domain/store.js';
 import {todayStr} from '../domain/dates.js';
 import {streakView,weekView} from '../domain/activity.js';
 import {estimateMinutes,nextActionForBadge} from '../domain/quest.js';
 import {render} from './render.js';
+
+const srcById=id=>SOURCES.find(x=>x.id===id);
 
 function progressLines(b,s,today){
   if(b.type==='streak'){
@@ -55,16 +57,36 @@ function nextActionHTML(b,s,today){
   return `<div class="next-action${done?' done':''}">${text}</div>`;
 }
 
-function srcMini(src){
-  return `<div class="src-mini"><a href="${src.url}" target="_blank" rel="noopener">${src.title} ↗</a><div class="a">${src.author} · ${src.pub}${src.upd?` · updated ${src.upd}`:''} · ${src.type}</div></div>`;
+function awsRequirementHTML(b){
+  const faq=srcById('s8');
+  const blog=srcById('s1');
+  if(b.official){
+    return `<div class="req official">${b.official}</div>
+      <div class="src-kinds mono">source: <a href="${faq.url}" target="_blank" rel="noopener">${faq.title} ↗</a></div>`;
+  }
+  return `<div class="req">Program confirmed by AWS (AWS News Blog, 24 Aug 2026): Student Rewards spans 21 badges with reward tiers at 7 / 14 / 21.</div>
+    <div class="src-kinds mono">source: <a href="${blog.url}" target="_blank" rel="noopener">${blog.title} ↗</a></div>
+    <div class="verif">Per-badge requirement wording: <b>Verification needed</b> — AWS has not published exact wording for this badge.</div>`;
 }
 
-function sourceHTML(){
-  const official=SOURCES.filter(x=>x.type==='official');
-  const pool=COMMUNITY_SRC.map(id=>SOURCES.find(x=>x.id===id)).filter(Boolean);
-  return `<div class="src-kinds mono">program facts: official source · requirement wording: community interpretation</div>
-    ${official.map(srcMini).join('')}
-    ${pool.map(srcMini).join('')}`;
+function viewSourceHTML(entry){
+  const src=srcById(entry.id); if(!src)return '';
+  return `<details class="src-view">
+    <summary><span class="vs-btn">View source</span><span class="vs-id mono">${src.id} · ${src.author}</span></summary>
+    <div class="sv-body">
+      <div class="sv-title">${src.title}</div>
+      <div class="sv-meta mono">${src.author} · ${src.pub?`published ${src.pub}`:'undated page'} · ${src.upd?`updated ${src.upd} · `:''}type: ${src.type}</div>
+      <div class="sv-url"><a href="${src.url}" target="_blank" rel="noopener">${src.url} ↗</a></div>
+      <div class="sv-part"><b>Synthesized for this badge:</b> ${entry.part}</div>
+    </div>
+  </details>`;
+}
+
+function communitySynthesisHTML(b){
+  const n=b.sources.length;
+  return `<div class="req">${b.req}</div>
+    <div class="src-kinds mono">community synthesis — paraphrased from ${n} source${n===1?'':'s'}, never copied or quoted</div>
+    ${b.sources.map(viewSourceHTML).join('')}`;
 }
 
 export function openDrawer(id){
@@ -76,8 +98,9 @@ export function openDrawer(id){
   document.getElementById('drawer').innerHTML=`
     <div class="drawer-head"><div><h3>${b.name}</h3><div class="ph mono">#${String(b.n).padStart(2,'0')} · ${b.phase}</div></div><button class="close-x" id="closeDrawer" aria-label="Close">✕</button></div>
     <label>AWS requirement</label>
-    <div class="req">${b.req}</div>
-    <div class="verif">Requirement wording is a community interpretation, not official AWS text. Exact thresholds: <b>Verification needed</b> on AWS Builder Center.</div>
+    ${awsRequirementHTML(b)}
+    <label>Community synthesis</label>
+    ${communitySynthesisHTML(b)}
     <label>Recommended path</label>
     <div class="path-lines">${pathLines(b)}</div>
     <label>Your progress</label>
@@ -90,8 +113,6 @@ export function openDrawer(id){
     ${readOnly?'<div class="verif">Community Mode shows example progress — switch to Personal Mode to record activity or overrides.</div>':''}
     <label>Next action</label>
     ${nextActionHTML(b,s,today)}
-    <label>Source</label>
-    ${sourceHTML()}
     <label for="noteArea">My notes</label>
     <textarea id="noteArea" placeholder="e.g. commented on X, article published Sep 29..."${readOnly?' readonly':''}>${s.notes[b.id]||''}</textarea>
   `;

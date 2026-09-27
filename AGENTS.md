@@ -28,8 +28,9 @@ or rewards.
 - Folder layout:
   - `src/app.js` — entry point: wires events, boots the router (`initRouter`), triggers the
     first render.
-  - `src/data/` — static catalog only: badge definitions + phases (`badges.js`), cited
-    sources (`sources.js`), reward tiers (`rewards.js`).
+  - `src/data/` — static catalog only: badge definitions + phases (`badges.js`, incl. each
+    badge's `official` fact and community `sources` mapping), cited sources (`sources.js`,
+    incl. per-source `usedFor` and the `LAST_CHECKED` date), reward tiers (`rewards.js`).
   - `src/domain/` — DOM-free logic: `dates.js` (local calendar-date + ISO week helpers),
     `activity.js` (pure streak/week transitions + derived views), `activityLog.js` (the
     activity-log source of truth: normalization, run/week rebuilds, Activity-section models —
@@ -94,6 +95,13 @@ Badge = {
   phase: string,          // one of PHASES — recommended-path grouping, NOT an AWS sequence
   type: "quick" | "streak" | "weekly" | "community",
   req: string,            // paraphrased requirement summary — never copied verbatim from a source
+  official?: string,      // AWS-confirmed per-badge fact ONLY (from an official source);
+                          // absent means AWS has not published per-badge wording, so the drawer
+                          // shows program-level facts + a "Verification needed" box instead
+  sources: [{id, part}],  // community sources that synthesized `req`, each `part` = one line on
+                          // what that source contributed (rendered as "View source" rows).
+                          // Only `type:'community'` sources belong here — official facts live in
+                          // `official` and the drawer's AWS-requirement block, never in `sources`.
   // type === "streak" only:
   key: "signin" | "like" | "comment",
   target: 7 | 30 | 90,
@@ -107,8 +115,11 @@ Badge = {
 // A cited source (static, in-code)
 Source = {
   id: string, title: string, author: string, url: string,
-  pub: "YYYY-MM-DD", upd?: "YYYY-MM-DD",
-  type: "official" | "community"
+  pub?: "YYYY-MM-DD",      // optional — some official pages are undated (Builder Center FAQ)
+  upd?: "YYYY-MM-DD",
+  type: "official" | "community",
+  usedFor: string          // one line on what this source is used for (shown in the Sources
+                           // view); sources cited by zero badges must still declare their role
 }
 
 // Persisted user state -> localStorage["aws-student-rewards.quest.v3"]
@@ -244,22 +255,31 @@ AWS is the sole source of truth for which badges exist and what they require. Th
   actual source, the UI must say so ("Verification needed") instead of guessing.
 - Never copy article text, marketing copy, or images from Builder Center posts or the AWS
   News Blog. Requirement strings (`Badge.req`) must stay original paraphrases.
-- Keep the distinction visible in the UI: **AWS requirement** vs **recommended path** vs
-  **personal progress**. Don't merge these concepts to simplify a component.
-- Every badge's source-of-record note ("community interpretation, not official AWS wording")
-  in the detail drawer must stay — do not remove it as "clutter."
+- Keep the four kinds of statements separate in every surface (drawer, Sources view,
+  quest meta): **AWS requirement** (official facts, cited inline) vs **community synthesis**
+  (the paraphrased `Badge.req` + its `badge.sources` "View source" rows) vs **recommended
+  path** (this app's own rules) vs **your progress** (local data). Don't merge these
+  concepts to simplify a component.
+- Every badge drawer must keep its source-of-record note ("community synthesis — paraphrased
+  from N sources, never copied or quoted") and the community "View source" rows — do not
+  remove them as "clutter." Badges without AWS per-badge wording must keep their
+  "Verification needed" box.
 - Keep the non-affiliation disclaimer in the footer, unedited in meaning, on every screen the
   app can land on.
 - If a future refactor adds new badges, phases, or reward tiers, add real `Source` entries for
-  them (id, author, url, published date, `official`/`community`) before writing copy — don't
-  ship a badge without a citation.
+  them (id, author, url, published date, `official`/`community`, `usedFor`) before writing
+  copy — don't ship a badge without a citation.
+- When requirement wording is re-verified against sources, bump `LAST_CHECKED` in
+  `src/data/sources.js` (it renders as "Requirements last checked" in the Sources view).
 
-Confirmed-official facts (safe to state as fact, verified against the AWS News Blog post,
-25 Sep 2026): the program requires SheerID student verification + a completed Builder Center
-profile, grants 12 months of AWS Skill Builder Premium, and pays out at 7 badges ($10 AWS
-Credits), 14 badges (+$20 credits), and 21 badges ($100 AWS Foundational Certification exam
-voucher). Everything else (exact per-badge wording, whether badges have hard prerequisites) is
-a community-sourced synthesis and should keep being labeled as such.
+Confirmed-official facts (safe to state as fact, verified against the AWS News Blog post and
+the AWS Builder Center FAQ, last checked 26 Sep 2026): the program requires SheerID student
+verification + a completed Builder Center profile, grants 12 months of AWS Skill Builder
+Premium, and pays out at 7 badges ($10 AWS Credits), 14 badges (+$20 credits), and 21 badges
+($100 AWS Foundational Certification exam voucher); the FAQ also confirms the per-badge
+actions for **Hello, World!** (fill in your About section) and **Photo Finisher** (upload a
+profile photo). Everything else (exact per-badge wording, whether badges have hard
+prerequisites) is a community-sourced synthesis and should keep being labeled as such.
 
 ## 6. Design system
 
@@ -340,16 +360,13 @@ Left out of v1 deliberately to ship a working core first. In rough priority orde
    history is never backfilled, on purpose).
 2. **Subtle completion micro-interactions** (badge pop, XP gain animation) — currently instant
    state updates with no animation.
-3. **Per-badge unique source mapping** — all badges currently cite the same pool of 5
-   community sources; a more precise mapping (which specific article covers which badge) would
-   strengthen the "Sources" drawer.
-4. **Accessibility pass**: current build has semantic HTML, focus-visible states, `sr-only`
+3. **Accessibility pass**: current build has semantic HTML, focus-visible states, `sr-only`
    text, aria-labelled heatmap cells, and `prefers-reduced-motion`, but has not had a full
    screen-reader/keyboard-only walkthrough.
-5. **Light theme** — only dark theme exists today.
-6. **React + TypeScript + Vite migration** (see §3) — only worth doing once UI complexity
+4. **Light theme** — only dark theme exists today.
+5. **React + TypeScript + Vite migration** (see §3) — only worth doing once UI complexity
    justifies component boundaries; keep the data model from §4 intact if you do this.
-7. **Shareable progress image / leaderboard / cloud sync** — explicitly deferred until there's
+6. **Shareable progress image / leaderboard / cloud sync** — explicitly deferred until there's
    a backend; do not add a backend without discussing it first, per §9.
 
 ## 9. Guardrails — do not do these without being explicitly asked
@@ -380,12 +397,14 @@ Tests are dependency-free and run on Node's built-in test runner (no install nee
 npm test            # == node --test "tests/*.test.js"
 ```
 
-They cover the domain only (`src/domain/*`): local-date math, daily streak rules, ISO week
-rules, milestone status, the activity log (normalization, rebuilds, summary, 90-day heatmap),
-the Today's Quest rule engine (priorities, ranking, at-risk honesty, no-mandate copy,
-`rewardProgress` projections), v1→v2→v3 migration, import validation, and localStorage
-persistence (via a fake
-`localStorage` in a child process). No DOM/browser test lives in the repo — if you touch UI
+They cover the domain (`src/domain/*`) and the static catalogs (`src/data/*`): local-date
+math, daily streak rules, ISO week rules, milestone status, the activity log (normalization,
+rebuilds, summary, 90-day heatmap), the Today's Quest rule engine (priorities, ranking,
+at-risk honesty, no-mandate copy, `rewardProgress` projections), v1→v2→v3 migration, import
+validation, localStorage persistence (via a fake `localStorage` in a child process),
+source integrity (catalog validity, every badge citing ≥ 1 community source, official-vs-
+community split, `LAST_CHECKED` freshness), and Community Mode isolation. No DOM/browser
+test lives in the repo — if you touch UI
 code, verify manually with a static server (§10) or a headless browser; the v3/mini-app work
 was validated with a Chrome DevTools Protocol smoke script (render, six-view navigation +
 active nav state, badge filters, log/reset, Community Mode, quest priorities/AT RISK,

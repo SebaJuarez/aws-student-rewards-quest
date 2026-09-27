@@ -20,8 +20,20 @@
 .next-action{background:var(--accent-soft);border:1px solid var(--accent-dim);border-radius:var(--r2);padding:10px 12px;font-family:var(--mono);font-size:var(--fs-md);color:var(--accent);margin-top:6px}
 .next-action.done{background:var(--green-soft);border-color:rgba(63,185,80,.4);color:var(--green)}
 .src-kinds{font-size:var(--fs-micro);color:var(--faint);margin-bottom:var(--s2)}
-.src-mini{border:1px solid var(--border);border-radius:var(--r2);padding:10px;margin-top:6px;font-size:var(--fs-sm)}
-.src-mini .a{color:var(--dim)}
+.src-kinds a{color:var(--dim);text-decoration:underline;text-underline-offset:2px}
+.src-kinds a:hover{color:var(--text)}
+.src-view{border:1px solid var(--border);border-radius:var(--r2);margin-top:6px;font-size:var(--fs-sm);background:var(--card)}
+.src-view summary{display:flex;justify-content:space-between;gap:var(--s2);align-items:center;padding:8px 10px;cursor:pointer;list-style:none}
+.src-view summary::-webkit-details-marker{display:none}
+.src-view summary:hover .vs-btn{border-color:var(--accent)}
+.vs-btn{font-family:var(--mono);font-size:var(--fs-micro);text-transform:uppercase;letter-spacing:.06em;color:var(--accent);border:1px solid var(--accent-dim);background:var(--accent-soft);border-radius:var(--rp);padding:2px 8px;flex-shrink:0}
+.vs-id{color:var(--faint);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}
+.sv-body{display:grid;gap:6px;border-top:1px solid var(--border);padding:8px 10px 10px}
+.sv-title{font-weight:500;color:var(--text);font-size:var(--fs-sm)}
+.sv-meta{color:var(--dim);font-size:var(--fs-micro)}
+.sv-url a{color:var(--accent);word-break:break-all;font-size:var(--fs-micro)}
+.sv-part{color:var(--dim);background:var(--bg2);border:1px solid var(--border);border-radius:var(--r1);padding:6px 8px;font-size:var(--fs-sm)}
+.sv-part b{color:var(--text);font-weight:600}
 .toast{position:fixed;bottom:var(--s5);left:50%;transform:translateX(-50%);background:var(--card);border:1px solid var(--accent-dim);box-shadow:var(--shadow-overlay);color:var(--text);padding:var(--s2) 16px;border-radius:var(--r3);font-size:var(--fs-md);z-index:50;opacity:0;pointer-events:none;transition:opacity var(--t-med)}
 .toast.show{opacity:1}
 .demo-banner{background:var(--accent-soft);border:1px solid var(--accent-dim);color:var(--accent);border-radius:var(--r3);padding:14px;font-size:var(--fs-md);margin-bottom:18px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}

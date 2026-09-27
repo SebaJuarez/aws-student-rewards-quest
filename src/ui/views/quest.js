@@ -27,7 +27,7 @@ function actionItem(a){
         <div class="qrow"><span class="txt">${a.title}</span><span class="qtime">${timeLabel(a.estimatedMinutes)}</span></div>
         <div class="why">${a.description}</div>
         <div class="qmeta"><b>personal</b>${a.status}</div>
-        ${a.requirement?`<div class="qmeta"><b>aws req</b>${a.requirement}</div>`:''}
+        ${a.requirement?`<div class="qmeta"><b>badge req</b>${a.requirement}</div>`:''}
         <div class="why">Contributes to: ${badgeNames(a.relatedBadges)}</div>
       </div>
     </div>`;

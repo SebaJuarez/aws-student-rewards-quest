@@ -28,5 +28,5 @@ export function render(){
   renderActivity(view);
   renderTimeline(view);
   renderSources();
-  renderSettings();
+  renderSettings(s);
 }

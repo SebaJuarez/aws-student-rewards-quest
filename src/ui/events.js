@@ -1,5 +1,6 @@
 import {SL,WL} from '../data/badges.js';
 import {setMode,resetAll,logStreak,resetStreak,logWeek,resetWeek,getState,importState,setStorageErrorHandler} from '../domain/store.js';
+import {completedCount} from '../domain/status.js';
 import {render} from './render.js';
 import {toast} from './toast.js';
 import {openDrawer,closeDrawer} from './drawer.js';
@@ -20,12 +21,18 @@ export function bindEvents(){
   document.addEventListener('mouseover',pickHeat);
   document.addEventListener('focusin',pickHeat);
 
-  document.getElementById('btnReset').onclick=()=>{if(confirm('Reset ALL progress? This cannot be undone (export first if unsure).')){resetAll();render();toast('Progress reset');}};
+  document.getElementById('btnReset').onclick=()=>{
+    if(inCommunityMode()){toast('Switch to Personal Mode to change your data');return;}
+    if(confirm('Reset ALL progress? This cannot be undone (export first if unsure).')){resetAll();render();toast('Progress reset');}
+  };
   document.getElementById('btnExport').onclick=()=>{
     const blob=new Blob([JSON.stringify(getState(),null,2)],{type:'application/json'});
     const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='aws-student-rewards-progress.json'; a.click();
   };
-  document.getElementById('btnImport').onclick=()=>document.getElementById('fileImport').click();
+  document.getElementById('btnImport').onclick=()=>{
+    if(inCommunityMode()){toast('Switch to Personal Mode to change your data');return;}
+    document.getElementById('fileImport').click();
+  };
   document.getElementById('fileImport').onchange=(e)=>{
     const f=e.target.files[0]; if(!f)return;
     const r=new FileReader();
@@ -50,7 +57,9 @@ export function bindEvents(){
     const open=e.target.closest('[data-open]'); if(open){openDrawer(open.dataset.open);return;}
     const filter=e.target.closest('[data-filter]'); if(filter){setStatusFilter(filter.dataset.filter);render();return;}
     const start=e.target.closest('#btnStartJourney'); if(start){
-      if(confirm('Reset to a fresh 0/21 start and switch to Personal Mode?')){resetAll();render();toast('Fresh start — good luck!');}
+      const c=completedCount(getState());
+      const msg=c?`Switch to Personal Mode? This erases your personal progress (${c}/21 badges) — this cannot be undone.`:'Switch to Personal Mode and start at 0/21?';
+      if(confirm(msg)){resetAll();render();toast('Fresh start — good luck!');}
       return;
     }
     const log=e.target.closest('[data-log]'); if(log){
