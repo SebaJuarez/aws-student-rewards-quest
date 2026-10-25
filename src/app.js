@@ -2,13 +2,23 @@ import {bindEvents} from './ui/events.js';
 import {render} from './ui/render.js';
 import {initRouter,applyRoute} from './ui/router.js';
 import {syncBadgesRoute} from './ui/views/badges.js';
-import {closeDrawer} from './ui/drawer.js';
+import {openDrawer,closeDrawer} from './ui/drawer.js';
+import {setMode} from './domain/store.js';
 
 function handleRoute(route){
-  closeDrawer({restoreFocus:false});
+  if(route.params&&route.params.get('mode')==='community'){
+    setMode('community');
+  }
+  const badgeToOpen=route.params&&route.params.get('badge');
+  if(!badgeToOpen){
+    closeDrawer({restoreFocus:false});
+  }
   syncBadgesRoute(route);
   render();
   applyRoute();
+  if(badgeToOpen){
+    openDrawer(badgeToOpen);
+  }
 }
 
 bindEvents();
