@@ -4,14 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>AWS Student Rewards Quest</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="icon" type="image/svg+xml" href="./src/icons/icon.svg">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#0a0d12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="stylesheet" href="./src/styles/fonts.css">
 <link rel="stylesheet" href="./src/styles/tokens.css">
 <link rel="stylesheet" href="./src/styles/base.css">
 <link rel="stylesheet" href="./src/styles/layout.css">
 <link rel="stylesheet" href="./src/styles/components.css">
 <link rel="stylesheet" href="./src/styles/overlays.css">
+<link rel="stylesheet" href="./src/styles/overview.css">
+<link rel="stylesheet" href="./src/styles/badges.css">
+<link rel="stylesheet" href="./src/styles/feedback.css">
 <link rel="stylesheet" href="./src/styles/responsive.css">
 </head>
 <body>
@@ -34,13 +40,14 @@
 
 <main class="wrap">
   <div id="demoBanner"></div>
-
+  <!-- VIEW: Overview -->
   <div class="view" data-view="overview">
-    <section class="hero">
+    <section class="hero" id="hero">
       <div class="hero-copy">
         <div class="hero-eyebrow">AWS Builder Center · Student Rewards</div>
         <h1>21 badges. 90 days. One roadmap.</h1>
         <p class="sub">A community-built tracker for the Student Rewards program — not an official AWS product.</p>
+        <div id="heroCompactMeta" class="hero-compact-meta" style="display:none"></div>
       </div>
       <div class="progress-row">
         <svg class="ring" viewBox="0 0 100 100" id="ringSvg" aria-hidden="true"></svg>
@@ -60,44 +67,16 @@
         </div>
       </div>
     </section>
-
-    <section class="block">
-      <h2>Today's Quest <span class="h2-note">— recommended next steps, not AWS requirements</span></h2>
-      <div class="quest-card" id="questCard"></div>
-    </section>
-
-    <section class="block">
-      <h2>At Risk / Next Milestone</h2>
-      <div class="strip" id="statusStrip"></div>
-    </section>
-
-    <section class="block">
-      <h2>Streaks</h2>
-      <div class="streak-grid" id="streaks"></div>
-    </section>
-
-    <section class="block">
-      <h2>Weekly Streaks <span class="h2-note">— ISO calendar weeks</span></h2>
-      <div class="streak-grid" id="weekly"></div>
-    </section>
-
-    <section class="block">
-      <h2>Quest Map <span class="h2-note">— recommended path through the 6 phases, not an official AWS sequence</span></h2>
-      <div id="roadmapPreview"></div>
-    </section>
-
-    <section class="block">
-      <h2>Reward Tracker</h2>
-      <div class="reward-grid" id="rewards"></div>
-      <div class="reward-note">Reward descriptions reflect current AWS Student Rewards information and may change — verify on AWS Builder Center before redeeming.</div>
-    </section>
-
-    <section class="block">
-      <h2>Recent Activity <span class="h2-note">— from your log</span></h2>
-      <div id="recentActivity"></div>
-    </section>
+    <div id="onboardingCard"></div>
+    <section class="block" id="quickLog"></section>
+    <section class="block" id="questCard"></section>
+    <section class="strip" id="statusStrip"></section>
+    <section class="block" id="overviewStreaks"></section>
+    <section class="block" id="rewards"></section>
+    <section class="block" id="roadmapPreview"></section>
   </div>
 
+  <!-- VIEW: Badges -->
   <div class="view" data-view="badges" hidden>
     <section class="block">
       <h2>Badges <span class="h2-note">— all 21 in official order</span></h2>
@@ -106,6 +85,7 @@
     </section>
   </div>
 
+  <!-- VIEW: Activity -->
   <div class="view" data-view="activity" hidden>
     <section class="block">
       <h2>Activity <span class="h2-note">— what you actually logged</span></h2>
@@ -113,6 +93,7 @@
     </section>
   </div>
 
+  <!-- VIEW: Timeline -->
   <div class="view" data-view="timeline" hidden>
     <section class="block">
       <h2>90-Day Timeline <span class="h2-note">— milestones from your start date</span></h2>
@@ -122,6 +103,7 @@
     </section>
   </div>
 
+  <!-- VIEW: Sources -->
   <div class="view" data-view="sources" hidden>
     <section class="block">
       <h2>Sources &amp; Methodology</h2>
@@ -140,6 +122,7 @@
     </section>
   </div>
 
+  <!-- VIEW: Settings -->
   <div class="view" data-view="settings" hidden>
     <section class="block">
       <h2>Settings</h2>
@@ -156,29 +139,72 @@
           <div class="set-actions">
             <button class="icon-btn" id="btnExport" aria-label="Export progress">↓ Export</button>
             <button class="icon-btn" id="btnImport" aria-label="Import progress">↑ Import</button>
+            <button class="icon-btn" id="btnExportCal" aria-label="Export calendar reminders">📅 Calendar (.ics)</button>
             <input type="file" id="fileImport" accept="application/json" style="display:none">
             <button class="btn danger" id="btnReset">Reset progress</button>
           </div>
-          <p class="set-desc">Export downloads a JSON file. Import replaces current progress (older exports are migrated). Reset clears everything — export first if unsure.</p>
+          <p class="set-desc">Export downloads a JSON file. Import replaces current progress (older exports are migrated). Reset clears everything — export first if unsure. Calendar export provides a standard .ics file with habit reminders and milestones.</p>
         </div>
         <div class="set-card">
           <div class="set-head">Storage</div>
           <div class="set-storage mono" id="storageInfo"></div>
         </div>
         <div class="set-card">
-          <div class="set-head">About</div>
-          <p class="set-desc">AWS Student Rewards Quest v2 — an independent, community-built tracker. Vanilla HTML/CSS/JS, zero dependencies, no server, no tracking. Not affiliated with or endorsed by Amazon Web Services.</p>
+          <div class="set-head">About & Shortcuts</div>
+          <p class="set-desc">AWS Student Rewards Quest v2 — an independent, community-built tracker. Vanilla HTML/CSS/JS, zero dependencies, no server, no tracking, no external requests. Not affiliated with or endorsed by Amazon Web Services.</p>
+          <div style="margin-top:var(--s3)">
+            <button class="icon-btn" id="btnShortcuts">⌨ Keyboard shortcuts [?]</button>
+          </div>
         </div>
       </div>
     </section>
   </div>
 
-  <div class="disclaimer">Not affiliated with or endorsed by Amazon Web Services. "AWS Student Rewards Quest" is an independent, community-built roadmap and tracker based on publicly available AWS Builder Center guidance. Export your data anytime — everything lives in your browser's local storage.</div>
+  <div class="disclaimer">Not affiliated with or endorsed by Amazon Web Services. "AWS Student Rewards Quest" is an independent, community-built roadmap and tracker based on publicly available AWS Builder Center guidance. Export your data anytime — everything lives in your browser's local storage. No external requests.</div>
 </main>
 
 <div class="overlay" id="overlay"></div>
 <aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Badge detail"></aside>
-<div class="toast" id="toast"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="confirmDialog" class="confirm-dialog" aria-labelledby="dialogTitle" aria-describedby="dialogBody">
+  <form method="dialog" class="dialog-card">
+    <div class="dialog-head">
+      <h3 id="dialogTitle">Confirm</h3>
+      <button type="button" class="close-x" id="dialogClose" aria-label="Close">✕</button>
+    </div>
+    <p id="dialogBody" class="dialog-body"></p>
+    <div class="dialog-actions">
+      <button type="button" class="btn" id="dialogCancel">Cancel</button>
+      <button type="submit" class="btn primary" id="dialogConfirm">Confirm</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="shortcutsDialog" class="confirm-dialog shortcuts-dialog" aria-labelledby="shortcutsTitle">
+  <form method="dialog" class="dialog-card">
+    <div class="dialog-head">
+      <h3 id="shortcutsTitle">Keyboard Shortcuts</h3>
+      <button type="button" class="close-x" id="shortcutsClose" aria-label="Close">✕</button>
+    </div>
+    <div class="shortcuts-list">
+      <div class="sc-row"><kbd>1</kbd><span>Overview view</span></div>
+      <div class="sc-row"><kbd>2</kbd><span>Badges catalog</span></div>
+      <div class="sc-row"><kbd>3</kbd><span>Activity & Heatmap</span></div>
+      <div class="sc-row"><kbd>4</kbd><span>Timeline roadmap</span></div>
+      <div class="sc-row"><kbd>5</kbd><span>Sources bibliography</span></div>
+      <div class="sc-row"><kbd>6</kbd><span>Settings</span></div>
+      <div class="sc-row"><kbd>L</kbd><span>Focus next Quick Log action</span></div>
+      <div class="sc-row"><kbd>←</kbd> <kbd>→</kbd><span>Previous / next badge in drawer</span></div>
+      <div class="sc-row"><kbd>Esc</kbd><span>Close drawer or modal</span></div>
+      <div class="sc-row"><kbd>?</kbd><span>Show this cheat sheet</span></div>
+    </div>
+    <div class="dialog-actions">
+      <button type="submit" class="btn primary" id="shortcutsDone">Got it</button>
+    </div>
+  </form>
+</dialog>
+
 <script type="module" src="./src/app.js"></script>
 </body>
 </html>

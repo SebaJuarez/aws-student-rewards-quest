@@ -34,6 +34,8 @@
   .act-today-head{font-size:11px}
   .apill{padding:6px 11px;font-size:11.5px}
   .quest-card{padding:var(--s4)}
+  .strip-panel{padding:var(--s4)}
+  .qactions{margin-left:auto}
   .block h2{flex-wrap:wrap;row-gap:var(--s1)}
   .block h2::after{display:none}
   .block h2 .h2-note{flex:1 0 100%}

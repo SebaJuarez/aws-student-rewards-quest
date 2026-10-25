@@ -1,0 +1,19 @@
+{
+  "name": "AWS Student Rewards Quest",
+  "short_name": "Rewards Quest",
+  "description": "Local-first roadmap and tracker for AWS Student Rewards program",
+  "start_url": "./index.html#/overview",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0a0d12",
+  "theme_color": "#0a0d12",
+  "icons": [
+    {
+      "src": "./src/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

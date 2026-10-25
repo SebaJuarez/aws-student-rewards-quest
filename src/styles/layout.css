@@ -33,7 +33,7 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backgroun
 .bar-inner.done{background:var(--green)}
 .bar-rail{overflow:visible}
 .rail-tick{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--bg);border-left:1px solid var(--border);pointer-events:none}
-.rail-labels{position:relative;height:14px;margin-topvar(--s1);font-family:var(--mono);font-size:var(--fs-micro);color:var(--faint);line-height:14px}
+.rail-labels{position:relative;height:14px;margin-top:var(--s1);font-family:var(--mono);font-size:var(--fs-micro);color:var(--faint);line-height:14px}
 .rail-labels span{position:absolute;transform:translateX(-50%)}
 .rail-labels span:last-child{transform:translateX(-100%)}
 .stat-line{display:flex;justify-content:space-between;margin-top:6px;font-size:var(--fs-sm);color:var(--dim);font-family:var(--mono)}
