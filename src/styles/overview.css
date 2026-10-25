@@ -1,0 +1,81 @@
+/* Overview view: quick-log bar, compact hero, compact streak table, onboarding, next-milestone card. */
+
+/* Mobile compact hero */
+@media(min-width:641px){
+  .hero-compact-meta{display:none}
+}
+@media(max-width:640px){
+  .hero{grid-template-columns:1fr;padding:var(--s2) 0 var(--s1);gap:0}
+  .hero-copy{display:none}
+  .progress-row{grid-template-columns:44px minmax(0,1fr);gap:var(--s3);align-items:center}
+  .ring{width:44px;height:44px}
+  .hero-bar{display:none}
+  .hero-compact-meta{display:block;font-family:var(--mono);font-size:var(--fs-base);font-weight:600;color:var(--text);line-height:44px}
+}
+
+/* Quick-log bar */
+.quick-log-bar{background:var(--card);border:1px solid var(--border);border-radius:var(--r3);padding:var(--s4)}
+.quick-log-hint{font-size:var(--fs-micro);color:var(--faint)}
+
+/* Compact Streaks table */
+.streak-table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r3);overflow-x:auto}
+.streak-table{width:100%;border-collapse:collapse;font-size:var(--fs-sm);text-align:left}
+.streak-table th{font-family:var(--mono);font-size:var(--fs-micro);text-transform:uppercase;letter-spacing:.05em;color:var(--faint);padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2)}
+.streak-table td{padding:11px 14px;border-bottom:1px solid var(--border-soft);vertical-align:middle}
+.st-row:last-child td{border-bottom:0}
+.st-row:hover td{background:var(--card-hi)}
+.st-name{font-weight:600;color:var(--text);white-space:nowrap}
+.st-prog-wrap{display:flex;align-items:center;gap:var(--s2)}
+.st-bar{width:80px;height:6px;flex-shrink:0}
+.st-nums{font-size:var(--fs-micro);color:var(--dim);white-space:nowrap}
+.st-longest{font-size:var(--fs-sm);color:var(--dim);white-space:nowrap}
+.st-state{white-space:nowrap}
+.status-pill.lost{background:var(--red-soft);color:var(--red);border-color:rgba(240,96,90,.4)}
+
+@media(max-width:640px){
+  .streak-table th,.streak-table td{padding:8px 10px}
+  .st-bar{width:56px}
+}
+
+/* Next milestone rich panel (Task 8) */
+.strip-tier-row{display:flex;justify-content:space-between;align-items:baseline;gap:var(--s2);flex-wrap:wrap;margin-bottom:6px}
+.tier-label{font-size:var(--fs-base)}
+.tier-count{font-size:var(--fs-micro);color:var(--dim)}
+.strip-tier-bar{margin-bottom:6px}
+.milestone-badges-list{margin-top:var(--s3);padding-top:var(--s2);border-top:1px dashed var(--border-soft)}
+.strip-sub-title{font-size:var(--fs-micro);color:var(--faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.strip-badge-items{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.strip-badge-items li{display:flex;justify-content:space-between;gap:var(--s2);align-items:baseline;font-size:var(--fs-sm)}
+.strip-badge-name{color:var(--text)}
+.strip-badge-date{font-size:var(--fs-micro);color:var(--accent)}
+.strip-proj-date{margin-top:8px;font-size:var(--fs-micro);color:var(--faint)}
+.strip-proj-date b{color:var(--accent)}
+
+/* Onboarding card (Task 9) */
+.onboarding-card{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:var(--r3);padding:var(--s5);margin-top:var(--s6)}
+.onboarding-head{display:flex;align-items:center;gap:var(--s2);margin-bottom:var(--s2);flex-wrap:wrap}
+.onboarding-subtitle{font-size:var(--fs-micro);color:var(--faint)}
+.onboarding-desc{font-size:var(--fs-sm);color:var(--dim);margin:0 0 var(--s3);line-height:1.5}
+.onboarding-reqs{display:grid;gap:var(--s3)}
+.onboarding-req-item{display:flex;gap:var(--s3);align-items:flex-start;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:var(--s3)}
+.req-step-num{width:22px;height:22px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:700;font-size:var(--fs-micro);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.req-step-body{flex:1;min-width:0}
+.req-step-title{font-weight:600;font-size:var(--fs-base);color:var(--text);display:flex;gap:var(--s2);align-items:center;flex-wrap:wrap}
+.req-step-desc{font-size:var(--fs-sm);color:var(--dim);margin:4px 0 6px;line-height:1.45}
+.req-step-cite a{font-family:var(--mono);font-size:var(--fs-micro);color:var(--accent)}
+.req-step-cite a:hover{text-decoration:underline}
+.onboarding-divider{height:1px;background:var(--border-soft);margin:var(--s4) 0}
+.onboarding-steps{display:grid;gap:var(--s2)}
+.onboarding-step-card{display:flex;justify-content:space-between;align-items:center;gap:var(--s3);background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);padding:var(--s3)}
+.onboarding-step-main{display:flex;align-items:center;gap:var(--s3);flex:1;min-width:0}
+.step-badge-n{font-size:var(--fs-micro);color:var(--faint);width:20px;text-align:center;flex-shrink:0}
+.step-badge-info{flex:1;min-width:0}
+.step-badge-name{font-weight:600;font-size:var(--fs-base);color:var(--text)}
+.step-badge-dur{font-weight:400;font-size:var(--fs-micro);color:var(--faint);margin-left:var(--s2)}
+.step-badge-req{font-size:var(--fs-sm);color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+@media(max-width:640px){
+  .onboarding-step-card{flex-direction:column;align-items:stretch;gap:var(--s2)}
+  .onboarding-step-card .btn{align-self:flex-start}
+  .step-badge-req{white-space:normal}
+}

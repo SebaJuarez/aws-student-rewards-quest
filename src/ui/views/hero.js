@@ -24,7 +24,11 @@ export function renderHero(view){
   bar.classList.toggle('done',cc>=21);
   document.getElementById('progressLabel').textContent=`${cc} / 21 badges`;
   document.getElementById('progressPct').textContent=Math.round(pct)+'%';
-  document.getElementById('chipLevel').textContent=levelFor(cc);
+  const level=levelFor(cc);
+  const day=`Day ${dayNumber(view)}`;
+  document.getElementById('chipLevel').textContent=level;
   document.getElementById('chipMilestone').textContent=nextMilestone(cc).label;
-  document.getElementById('chipDay').textContent=`Day ${dayNumber(view)}`;
+  document.getElementById('chipDay').textContent=day;
+  const compactEl=document.getElementById('heroCompactMeta');
+  if(compactEl) compactEl.textContent=`${cc}/21 · ${day} · ${level}`;
 }
