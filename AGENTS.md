@@ -57,9 +57,10 @@ or rewards.
   `aws-student-rewards.quest.v2` and `.v1` keys are migrated into v3 on first load and are
   then left in place untouched as backups (they are never deleted, so a failed migration
   never destroys progress).
-- Ships with the author's real starting state hardcoded as the *default* (2/21 badges:
-  Hello, World! + Photo Finisher) — but nothing is hardcoded into the UI; every number is
-  derived from state at render time. Never reintroduce hardcoded progress into a component.
+- Default state is **0/21 badges** (empty `completed` map) — but nothing is hardcoded into the UI;
+  every number is derived from state at render time. Never reintroduce hardcoded progress into a
+  component. The author's personal state (2/21: Hello, World! + Photo Finisher) is no longer the
+  default; users start fresh and existing v3 data is preserved by `normalizeState`.
 - Was authored and is currently hosted as a published Claude Artifact (self-contained HTML,
   fonts loaded from Google Fonts, no other external calls). Keep it deployable as a static
   site (GitHub Pages, Netlify, or any static host) — do not add anything that requires a
@@ -295,8 +296,8 @@ light mode yet, see backlog).
   `--yellow:#d9a441` `--red:#f0605a` `--locked:#3a424d`
 - Type: **Open Sans** for body/UI (Cloudscape's face — AWS-console familiarity without copying
   AWS assets), **IBM Plex Mono** for numbers, IDs, dates, counters, and status labels
-  (console/developer-tooling feel). Loaded from Google Fonts — the only external network
-  dependency. Sentence text stays ≥ 12px and UI labels ≥ 11px (packed heatmap chrome may sit
+  (console/developer-tooling feel). Self-hosted as WOFF2 (latin subset) — no external network
+  dependencies. Sentence text stays ≥ 12px and UI labels ≥ 11px (packed heatmap chrome may sit
   at 10.5px); don't shrink type to fit more content.
 - Spacing & shape: a 4px scale (`--s1`–`--s10` = 4/8/12/16/20/24/32/40) and radius tokens
   (`--r1` 4, `--r2` 6, `--r3` 8, `--r4` 12, `--rp` pill) live in `tokens.css` — prefer them
@@ -375,8 +376,7 @@ Left out of v1 deliberately to ship a working core first. In rough priority orde
 - Do not add tracking/analytics scripts.
 - Do not remove or water down the AWS non-affiliation disclaimer.
 - Do not present community-sourced badge requirements as official AWS fact.
-- Do not add external script/style dependencies beyond Google Fonts unless there's a strong
-  reason — this app's whole value proposition includes "runs anywhere, no install."
+- Do not add external script/style dependencies — this app's whole value proposition includes "runs anywhere, no install." Fonts are self-hosted.
 
 ## 10. Running / previewing locally
 

@@ -167,7 +167,7 @@ test('setOverride, setNote, setMode and resetAll persist through save()',()=>{
   store.resetAll();
   const fresh=store.getState();
   assert.equal(fresh.version,3);
-  assert.equal(fresh.completed['hello-world'],true);
+  assert.equal(fresh.completed['hello-world'],undefined,'resetAll starts with 0/21 completed');
   assert.deepEqual(fresh.weekly.wishVote.weeks,[]);
   assert.equal(saved().startedAt,fresh.startedAt);
 });
@@ -180,4 +180,75 @@ test('storageInfo reports the live key, its size and surviving legacy backups',(
   assert.equal(info.bytes,storage.getItem('aws-student-rewards.quest.v3').length);
   assert.ok(info.legacy.includes('aws-student-rewards.quest.v1'),'the v1 backup is never deleted');
   assert.ok(!info.legacy.includes('aws-student-rewards.quest.v2'),'no v2 backup was seeded in this test');
+});
+
+test('corrupt v3 with valid v2 falls back to v2 and backs up corrupt v3',()=>{
+  storage.clear();
+  store.__resetForTest();
+  const V2_STATE={
+    version:2,
+    startedAt:addDays(TODAY,-10),
+    mode:'personal',
+    completed:{'knowledge-seeker':true},
+    overrides:{},
+    streaks:{signin:{current:3,longest:5,startedAt:addDays(TODAY,-5),last:addDays(TODAY,-1)},like:{current:0,longest:0,startedAt:null,last:null},comment:{current:0,longest:0,startedAt:null,last:null}},
+    weekly:{wishVote:{weeks:['2026-W38'],longest:1},articlePublish:{weeks:[],longest:0}}
+  };
+  storage.setItem(V2_KEY,JSON.stringify(V2_STATE));
+  storage.setItem(V3_KEY,'not valid json {{{');
+  const s=store.getState();
+  assert.equal(s.version,3);
+  assert.equal(s.startedAt,addDays(TODAY,-10));
+  assert.equal(s.completed['knowledge-seeker'],true);
+  const corruptKeys=storage.keys().filter(k=>k.startsWith('aws-student-rewards.quest.v3.corrupt-'));
+  assert.ok(corruptKeys.length>=1,'corrupt v3 should be backed up');
+  const warning=store.consumeLoadWarning();
+  assert.ok(warning&&warning.includes('corrupted'),'load warning should mention corruption');
+  assert.equal(store.consumeLoadWarning(),null,'warning consumed once');
+});
+
+test('corrupt v3 with broken JSON falls back to default and backs up',()=>{
+  storage.clear();
+  store.__resetForTest();
+  storage.setItem(V3_KEY,'{ broken json');
+  const s=store.getState();
+  assert.equal(s.version,3);
+  assert.deepEqual(s.completed,{});
+  const corruptKeys=storage.keys().filter(k=>k.startsWith('aws-student-rewards.quest.v3.corrupt-'));
+  assert.ok(corruptKeys.length>=1,'corrupt v3 should be backed up');
+  const warning=store.consumeLoadWarning();
+  assert.ok(warning&&warning.includes('corrupted'),'load warning should mention corruption');
+});
+
+test('valid v3 does not create corrupt backup',()=>{
+  storage.clear();
+  store.__resetForTest();
+  const VALID_V3={
+    version:3,
+    startedAt:addDays(TODAY,-5),
+    mode:'personal',
+    completed:{'first-article':true},
+    overrides:{},
+    activityLog:{},
+    streaks:{signin:{current:0,longest:0,startedAt:null,last:null},like:{current:0,longest:0,startedAt:null,last:null},comment:{current:0,longest:0,startedAt:null,last:null}},
+    weekly:{wishVote:{weeks:[],longest:0},articlePublish:{weeks:[],longest:0}},
+    notes:{}
+  };
+  storage.setItem(V3_KEY,JSON.stringify(VALID_V3));
+  const s=store.getState();
+  assert.equal(s.completed['first-article'],true);
+  const corruptKeys=storage.keys().filter(k=>k.startsWith('aws-student-rewards.quest.v3.corrupt-'));
+  assert.equal(corruptKeys.length,0,'no corrupt backup for valid v3');
+  assert.equal(store.consumeLoadWarning(),null,'no warning for valid state');
+});
+
+test('corrupt backup limit keeps only 3 most recent',()=>{
+  storage.clear();
+  store.__resetForTest();
+  storage.setItem(V3_KEY,'bad1'); store.getState();
+  storage.setItem(V3_KEY,'bad2'); store.__resetForTest(); store.getState();
+  storage.setItem(V3_KEY,'bad3'); store.__resetForTest(); store.getState();
+  storage.setItem(V3_KEY,'bad4'); store.__resetForTest(); store.getState();
+  const corruptKeys=storage.keys().filter(k=>k.startsWith('aws-student-rewards.quest.v3.corrupt-')).sort().reverse();
+  assert.equal(corruptKeys.length,3,'only 3 corrupt backups kept');
 });
