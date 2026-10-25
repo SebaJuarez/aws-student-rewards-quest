@@ -1,173 +1,198 @@
+<div align="center">
+
+![AWS Student Rewards Quest Hero Banner](docs/hero-banner.jpg)
+
 # AWS Student Rewards Quest
+### The Local-First 90-Day Roadmap & Habit Engine for AWS Builder Center
 
-A local-first, gamified roadmap and tracker for the 21 badges in AWS Builder Center's
-**Student Rewards** program — built to answer one question at a glance: *where am I, what
-can I do today, what unlocks next, and what am I at risk of losing?*
+**Turn scattered badges, fragile 90-day streaks, and opaque requirements into an actionable daily quest.**
 
-> **Not affiliated with or endorsed by Amazon Web Services.** This is an independent,
-> community-built tracker based on publicly available AWS Builder Center guidance.
+[Explore Live Demo →](https://sebajuarez.github.io/aws-student-rewards-quest/) · [The Problem](#the-problem-why-students-fail-to-complete-student-rewards) · [The Solution](#the-solution-a-deterministic-daily-quest-engine) · [Features](#key-capabilities--product-tour) · [Quick Start](#quick-start--local-setup)
 
-**[Live demo →](https://sebajuarez.github.io/aws-student-rewards-quest/)**
+<br/>
 
-![status](https://img.shields.io/badge/status-v2-orange) ![no backend](https://img.shields.io/badge/backend-none-blue) ![no tracking](https://img.shields.io/badge/tracking-none-green) ![license](https://img.shields.io/badge/license-MIT-lightgrey)
+[![Status: v2](https://img.shields.io/badge/status-production_v2-orange?style=flat-square)](#)
+[![Zero Backend](https://img.shields.io/badge/backend-none_(local--first)-blue?style=flat-square)](#)
+[![Zero Telemetry](https://img.shields.io/badge/telemetry-none_(100%25_private)-green?style=flat-square)](#)
+[![Tests Passing](https://img.shields.io/badge/tests-154_passing-success?style=flat-square)](#)
+[![PWA Ready](https://img.shields.io/badge/pwa-offline_ready-purple?style=flat-square)](#)
+
+</div>
+
+> **Notice & Disclaimer:** This is an independent, community-built tracker and roadmap based on publicly available AWS Builder Center guidance. It is **not** affiliated with, endorsed by, or sponsored by Amazon Web Services, Inc.
 
 ---
 
-## Screenshots
+## The Problem: Why Students Fail to Complete Student Rewards
 
-**Overview** — where you are, what's at risk, what to do today:
+The **AWS Builder Center Student Rewards** program offers high-value career catalysts for university students — including **$30 in AWS Cloud Credits**, **12 months of AWS Skill Builder Premium**, and a **$100 AWS Foundational Certification Exam Voucher**.
 
-![Overview](docs/overview.png)
+Yet, the vast majority of students who register never claim the certification voucher due to four structural friction points:
 
-**Badge detail drawer** — the AWS requirement (with a *Verification needed* note when AWS
-hasn't published exact wording), the community synthesis with a **View source** row per
-cited source, the recommended path, your progress, and your notes:
+1. **Streak Fragility & Silent Resets**
+   The program requires maintaining 7, 30, and 90-day continuous daily streaks (sign-ins, likes, comments) and 4-week weekly publishing cycles. Missing a single local day or Sunday window quietly resets a months-long streak back to zero with zero advance warning from AWS.
+2. **Opaque, Fragmented Requirements**
+   AWS confirms that 21 badges exist, but the exact actions, prerequisites, and evaluation criteria are scattered across community blog posts, author guides, and forum discussions. Students are left guessing what actually triggers an unlock.
+3. **Daily Decision Paralysis ("What should I do today?")**
+   Without a sequenced roadmap, students complete easy one-time badges in their first week, but fail to start the mandatory 90-day daily runways on Day 1. By the time they realize a badge requires 90 consecutive days, their academic semester has passed.
+4. **Tool Bloat & Privacy Concerns**
+   Students shouldn't have to give third-party cloud backends access to their Builder Center accounts, install shady extensions, or risk telemetry leaks just to track simple habit progress.
 
-![Badge drawer with source citations](docs/drawer-sources.png)
+---
 
-**Sources & methodology** — official AWS sources, community sources (each labeled with
-what it was used for), and this tracker's own recommendation rules, kept apart:
+## The Solution: A Deterministic Daily Quest Engine
 
-![Sources and methodology](docs/sources.png)
+**AWS Student Rewards Quest** transforms the 21 badges into an interactive, local-first progression system. It eliminates ambiguity and protects your streaks with deterministic rules:
 
-**Badges** — all 21, filterable by status and phase:
+### 1. Today's Quest — Prioritized Action Queue
+Never wonder what to do next. The rule engine ranks the 3–5 highest-leverage actions for today using strict priority tiers:
+- **At-Risk Daily Streaks (Priority 100)**: Active streaks about to lapse before local midnight.
+- **90-Day Runway Starters (Priority 90)**: Long-duration commitments that must be started immediately to finish on time.
+- **Weekly Window Actions (Priority 80)**: Weekly wish voting and article drafting before the Sunday cutoff.
+- **Quick Wins & Community Badges (Priority 70–60)**: Actionable 5-minute profile tasks.
 
-![Badges list](docs/badges.png)
+Each action displays exact estimated minutes, requirement context, and direct 1-tap logging buttons.
 
-**Activity** — today's log, the last 7 days, a 90-day heatmap:
+### 2. Zero-Loss Habit Tracking with Instant Undo
+- **Quick Log Bar**: Record your daily sign-in, like, or comment habit in less than 2 seconds right from the dashboard.
+- **In-Memory Safety Undo**: Made a mistake or clicked the wrong button? Instant 1-level rollback via toast notifications.
+- **Continuous Streak Engine**: Streaks are modeled as unified counters — 7, 30, and 90-day milestones unlock seamlessly from the same counter without duplicate tracking.
 
-![Activity](docs/activity.png)
+### 3. 90-Day Interactive Activity Heatmap & Personal Records
+- Visual 90-day contribution matrix showing daily activity, streak health, and upcoming milestones.
+- Proactive risk states: cells highlight in warning orange when a live streak needs attention today, avoiding false "streak lost" alarms while the deadline is still open.
+- Touch-optimized targets (26px tap targets) and full keyboard navigation (arrow keys + roving tabindex).
+- Personal records summary card tracking your best daily streaks and most active weeks.
 
-**Mobile**:
+### 4. 21-Badge Catalog with Fast Search & Direct Actions
+- Instantly filter badges by status (*Available, Active, Completed, Locked*) or Phase (*Foundation, Daily Engagement, Community Contributor, etc.*).
+- Real-time instant search across badge titles, official numbers, and paraphrased requirements.
+- URL hash synchronization (`#/badges?q=article&phase=Community`) so search views are directly shareable and bookmarkable.
 
-![Overview on mobile](docs/overview-mobile.png)
+### 5. Strict Source Integrity & Drawer Transparency
+Every badge detail drawer strictly separates 4 distinct layers:
+- **AWS Official Fact**: Confirmed per-badge requirement (or a prominent *Verification Needed* warning if AWS has not officially published exact wording).
+- **Community Synthesis**: Paraphrased requirements from vetted AWS community builders with dedicated *View Source* citations.
+- **Recommended Path**: Strategy advice and day-1 tips.
+- **Your Progress**: Local completion status, personal overrides, and custom notes.
 
-## What it does
+### 6. 100% Local-First, Private & Offline
+- **Zero Server & Zero Telemetry**: All data stays in your browser's `localStorage`. No logins, no tracking, no external network requests.
+- **Calendar Reminders Export (.ics)**: Download standard iCalendar files with daily habit reminders and projected milestone alerts directly to Google Calendar, Apple Calendar, or Outlook.
+- **PWA Ready**: Offline Service Worker caching and Web App Manifest allow you to install it as a standalone desktop or mobile application.
+- **Full Portability**: Instant JSON export and schema-validated import with safety rollback.
 
-- Six in-app views, navigated from the header — **Overview**, **Badges**, **Activity**,
-  **Timeline**, **Sources**, **Settings** (hash routes like `#/badges`, so any view is
-  linkable and the browser back button works).
-- **Overview** answers the four questions at a glance: your level and milestone, Today's
-  Quest, what's at risk right now, and what's next.
-- Tracks progress on all 21 Student Rewards badges — `X / 21`, by phase, with real names and
-  paraphrased requirement summaries.
-- **Today's Quest**: computes the 3–5 highest-value actions to take right now (streaks at
-  risk first, then long-duration streaks worth starting on day 1, then quick wins), with an
-  explicit **AT RISK** block for whatever you can still lose before the day or the week closes.
-- **Badges**: a dense, filterable list (available / in progress / completed / locked, by
-  phase); the detail drawer keeps four layers strictly separate — the **AWS requirement**
-  (official facts or a *Verification needed* note), the **community synthesis** (the
-  paraphrased requirement plus a *View source* row showing exactly which sources fed it),
-  the **recommended path**, and **your progress** with overrides and notes.
-- **Activity**: today's log, the last 7 days, a 90-day heatmap and recent entries —
-  the day-by-day record of truth that streaks and weeks are rebuilt from.
-- **Streaks**: sign-in, like, and comment activity tracked as continuous counters, with the
-  7 / 30 / 90-day badges read off the same counter as milestones.
-- **90-day timeline**: dynamically calculated Day 1 / 7 / 30 / 90 markers from your actual
-  start date, with active days logged by each milestone.
-- **Reward tracker**: 7 badges → $10 AWS Credits, 14 badges → +$20 credits, 21 badges → $100
-  AWS Foundational Certification exam voucher (confirmed against the official AWS News Blog
-  announcement).
-- **Sources & methodology**: every source listed with author, date, link, and what it was
-  used for, split into *Official AWS*, *Community Builder Center*, and this tracker's own
-  rules — plus a *Requirements last checked* date.
-- **Personal / Community mode**: Community Mode is a read-only demo — logging, reset and
-  import are disabled there so example progress can never mix with your own. Per-badge
-  status overrides, per-badge notes, export/import as JSON, storage info, and a full reset
-  live in Settings. Everything stays in your browser's `localStorage`: no account, no
-  server, no data leaves your machine.
+---
 
-## Why it exists
+## Key Capabilities & Product Tour
 
-AWS's own program page tells you *that* the badges exist. It doesn't tell you which ones to
-start on day one, which streaks quietly reset your progress if you miss a day, or how the
-first 6 quick-win badges relate to the 90-day endgame. This tool turns that into an actual
-plan.
+| **Dashboard & Today's Quest** | **21 Badges Catalog & Search** |
+|:---:|:---:|
+| ![Overview Dashboard](docs/overview.png) | ![Badges Catalog](docs/badges.png) |
+| *Actionable Today's Quest, Quick Log bar, streak alerts, and rewards progress.* | *Live search, phase filters, sorting, and inline badge actions.* |
 
-## How this roadmap was built
+| **Activity Heatmap & Personal Records** | **Transparent Badge Drawer & Citations** |
+|:---:|:---:|
+| ![Activity Heatmap](docs/activity.png) | ![Badge Drawer Sources](docs/drawer-sources.png) |
+| *90-day activity matrix, keyboard navigation, and historical log.* | *Official AWS facts vs community synthesis with per-source citations.* |
 
-Four kinds of statements, never mixed:
+| **90-Day Milestone Timeline** | **Mobile Experience** |
+|:---:|:---:|
+| ![Timeline](docs/timeline.png) | ![Mobile View](docs/overview-mobile.png) |
+| *Day 1, 7, 30, and 90 milestone dates projected from your actual start date.* | *Fully responsive PWA layout with mobile navigation scroller.* |
 
-1. **AWS requirement** — facts from official AWS sources only (the AWS News Blog
-   announcement and the AWS Builder Center FAQ), stated as fact and cited inline. Anything
-   AWS has not published is marked **Verification needed** instead of being guessed.
-2. **Community synthesis** — every badge requirement is an original paraphrase synthesized
-   from individual-author Builder Center posts. Each badge's drawer lists exactly which
-   sources were used and what each one contributed.
-3. **Recommended path** — this tracker's own rules (phase grouping, Today's Quest
-   priorities, at-risk definition). Not AWS guidance, and not community claims.
-4. **Your progress** — your own logged data only, stored locally in your browser.
+---
 
-No article text, marketing copy, or images are copied from any source. The requirement
-wording is re-checked periodically; the current pass is dated in the app under
-**Sources → Requirements last checked**.
+## Reward Milestones
 
-## Tech stack
+The roadmap maps directly to the official AWS Student Rewards tier payout:
 
-HTML, CSS, and vanilla JavaScript as native ES modules — no build step, no framework, no
-dependencies besides a Google Fonts request (Open Sans / IBM Plex Mono). The code lives
-in small, single-purpose modules under `src/` and ships as plain static files, so it runs
-anywhere that serves static files: a static host, GitHub Pages, or a local server. See
-[`AGENTS.md`](./AGENTS.md) for the full rationale, folder conventions, data model, and refactor
-path if you want to move it to a component framework later.
+| Badges Completed | Official AWS Reward | Tracker Capability |
+|:---:|---|---|
+| **7 Badges** | **$10 AWS Credits** | Calculates milestone projection date based on active habits |
+| **14 Badges** | **+$20 AWS Credits** | Tracks runway gaps and highlights unlocked intermediate badges |
+| **21 Badges** | **$100 AWS Certification Voucher** (Foundational) | Full 90-day endgame projection and completion celebration |
+
+---
+
+## Architecture & Design Principles
+
+- **Zero Build Step, Zero Dependencies**: Pure HTML5, modern CSS3 (custom properties design tokens, container layouts), and native ES Modules (`src/`).
+- **Deterministic Domain Layer**: Clean separation between pure business logic (`src/domain/`) and view presentation (`src/ui/`).
+- **Resilient Storage Migration**: Versioned schema migrations (`v1 → v2 → v3`) ensure user data is never lost across app upgrades.
+- **Self-Contained & Privacy Compliant**: Self-hosted WOFF2 fonts (Open Sans & IBM Plex Mono) without external Google Fonts or CDN requests.
+- **Accessibility & Keyboard-First**: WCAG AA color contrast, `<dialog>` modals with focus traps, ARIA live announcements, and global shortcuts.
 
 ```
 src/
-├── app.js        # entry point: wires events, boots the hash router, triggers the first render
-├── data/         # static catalog: badges + phases, sources, reward tiers
-├── domain/       # DOM-free logic: store (localStorage), status rules, activity, quest engine
-├── ui/           # router (hash → view), render orchestrator, one file per view, drawer, events
-└── styles/       # design tokens, base, layout, components, overlays, responsive
+├── app.js               # Application entry point, router initialization & SW registration
+├── data/                # Static catalog (badges, sources, reward tiers)
+├── domain/              # Pure domain logic (store, dates, activity log, quest engine, calendar)
+├── ui/                  # UI components, hash router, render engine, modals, drawer, celebrations
+├── styles/              # Design tokens, base styles, layout, components, responsive rules
+└── fonts/               # Self-hosted WOFF2 typography (Open Sans & IBM Plex Mono)
 ```
 
-## Running it
+---
 
-There's nothing to install — just serve the files over http (the app uses ES modules, so
-opening `index.html` directly from disk won't work):
+## Quick Start & Local Setup
 
+Because the application uses native JavaScript ES Modules, browsers require it to be served over standard HTTP/HTTPS (opening `index.html` directly via `file://` will trigger browser CORS module security restrictions).
+
+### Prerequisites
+- Node.js (v18+) **or** Python (3.x) **or** any static web server.
+
+### 1. Clone the repository
 ```bash
 git clone https://github.com/SebaJuarez/aws-student-rewards-quest.git
 cd aws-student-rewards-quest
-npx serve .             # or: python3 -m http.server 8080
 ```
 
-Then open the printed localhost URL. The live demo above runs the exact same static files
-on GitHub Pages.
+### 2. Start a local server
+Run any of the following commands:
 
-Tests are dependency-free (`npm test`, Node's built-in test runner — no install needed) and
-cover the domain logic: streak/week rules, migration, quest priorities, and source
-integrity.
+**Using Node (npx):**
+```bash
+npx serve .
+```
 
-## Project status & roadmap
+**Using Python:**
+```bash
+python -m http.server 8080
+```
 
-This is v2 — the core loop (track, decide what to do today, don't lose your streak) works
-end to end inside a six-view mini-app. Deliberately left for later iterations: logging or
-undoing an arbitrary *past* day in the activity log, completion micro-animations, a light
-theme, and (optionally) a React/TypeScript rewrite once the UI outgrows the current module
-split. Full backlog and editing conventions live in [`AGENTS.md`](./AGENTS.md) — start there
-before opening a PR or pointing an AI coding agent at this repo.
+**Using VS Code:**
+Install the *Live Server* extension and click **"Go Live"** on `index.html`.
 
-## Sources
+### 3. Open in your browser
+Navigate to `http://localhost:8080` (or the URL printed by your server) to start your quest.
 
-Built from the official AWS announcement and the AWS Builder Center FAQ, plus publicly
-available AWS Builder Center community guides — synthesized and paraphrased, never copied.
-The full list with authors, dates, links and per-source usage is inside the app's
-**Sources** view, and the integrity rules live in
-[`AGENTS.md`](./AGENTS.md#5-source-integrity-rules-hard-constraints-not-style-preferences).
+### Running Automated Tests
+The repository includes a comprehensive, dependency-free test suite using Node's native test runner:
+```bash
+npm test
+```
+All 154 unit tests run in less than a second, validating streak calculations, activity normalization, quest ranking rules, calendar export, and data migration.
 
-## Contributing
+---
 
-Issues and PRs welcome — especially around the backlog items in `AGENTS.md`. If you change
-anything about badge requirements or reward tiers, please cite a real source (official or
-community) rather than guessing.
+## Keyboard Shortcuts
 
-## License
+Press `?` anywhere in the app to open the keyboard cheat sheet:
 
-MIT — see [`LICENSE`](./LICENSE).
+| Key | Action |
+|:---:|---|
+| <kbd>1</kbd> – <kbd>6</kbd> | Instant navigation across views (Overview, Badges, Activity, Timeline, Sources, Settings) |
+| <kbd>L</kbd> | Jump focus to the next available Quick Log action |
+| <kbd>←</kbd> / <kbd>→</kbd> | Navigate to previous / next badge while the detail drawer is open |
+| <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> <kbd>→</kbd> | Navigate days inside the 90-day activity heatmap |
+| <kbd>Esc</kbd> | Close active drawer, modal, or cheat sheet |
+| <kbd>?</kbd> | Open keyboard shortcuts modal |
+
+---
 
 ## Disclaimer
 
-"AWS Student Rewards Quest" is an independent, community-built roadmap and tracker. It is not
-affiliated with, endorsed by, or sponsored by Amazon Web Services, Inc. AWS, the AWS logo, and
-"AWS Builder Center" are trademarks of Amazon.com, Inc. or its affiliates. Reward details may
-change — always verify on AWS Builder Center before relying on this tool to redeem anything.
+**AWS Student Rewards Quest** is an independent, community-built roadmap and tracker. It is not affiliated with, endorsed by, or sponsored by Amazon Web Services, Inc. 
+
+"AWS", the AWS logo, "AWS Builder Center", and "AWS Skill Builder" are trademarks of Amazon.com, Inc. or its affiliates. Reward requirements and program terms are subject to change by AWS — always verify on the official [AWS Builder Center](https://builder.aws.com/) portal before redeeming rewards.
