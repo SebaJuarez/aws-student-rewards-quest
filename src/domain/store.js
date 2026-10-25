@@ -13,6 +13,7 @@ export const PRIOR_STORAGE_KEY='aws-student-rewards.quest.v2';
 export const LEGACY_STORAGE_KEY='aws-student-rewards.quest.v1';
 export const LEGACY_STORAGE_KEYS=[PRIOR_STORAGE_KEY,LEGACY_STORAGE_KEY];
 export const STATE_VERSION=3;
+const CORRUPT_PREFIX='aws-student-rewards.quest.v3.corrupt-';
 
 const OVERRIDE_SET=new Set(OVERRIDE_VALUES);
 
@@ -21,7 +22,7 @@ export function defaultState(){
   STREAK_KEYS.forEach(k=>{streaks[k]=emptyStreak()});
   WEEK_KEYS.forEach(k=>{weekly[k]=emptyWeek()});
   return {version:STATE_VERSION,startedAt:todayStr(),mode:'personal',
-    completed:{'hello-world':true,'photo-finisher':true},
+    completed:{},
     overrides:{},activityLog:{},streaks,weekly,notes:{}};
 }
 
@@ -237,9 +238,67 @@ export function normalizeState(raw){
 function readKey(key){
   try{
     const raw=localStorage.getItem(key);
-    if(!raw)return null;
-    return JSON.parse(raw);
-  }catch(e){return null}
+    if(raw===null)return {raw:null,exists:false};
+    return {raw,exists:true,parsed:JSON.parse(raw)};
+  }catch(e){
+    return {raw:localStorage.getItem(key),exists:true,parseError:e};
+  }
+}
+
+let loadWarning=null;
+function setLoadWarning(msg){if(!loadWarning)loadWarning=msg;}
+export function consumeLoadWarning(){const msg=loadWarning;loadWarning=null;return msg;}
+
+function listCorruptKeys(){
+  try{
+    const keys=[];
+    for(let i=0;i<localStorage.length;i++){
+      const k=localStorage.key(i);
+      if(k&&k.startsWith(CORRUPT_PREFIX))keys.push(k);
+    }
+    return keys.sort().reverse();
+  }catch(e){return []}
+}
+
+function pruneCorruptKeys(){
+  const keys=listCorruptKeys();
+  if(keys.length<=3)return;
+  keys.slice(3).forEach(k=>{try{localStorage.removeItem(k)}catch(e){}});
+}
+
+let corruptCounter=0;
+function backupCorrupt(key,raw){
+  if(!raw)return;
+  const stamp=new Date().toISOString().replace(/[:.]/g,'').replace('T','-').slice(0,17);
+  const backupKey=CORRUPT_PREFIX+stamp+'-'+(++corruptCounter);
+  try{localStorage.setItem(backupKey,raw)}catch(e){}
+  pruneCorruptKeys();
+}
+
+function load(){
+  const keys=[STORAGE_KEY,...LEGACY_STORAGE_KEYS];
+  for(const key of keys){
+    const {raw,exists,parsed,parseError}=readKey(key);
+    if(!exists)continue;
+    if(parseError){
+      if(key===STORAGE_KEY){
+        backupCorrupt(key,raw);
+        setLoadWarning('Saved progress was corrupted and has been backed up. Starting fresh.');
+      }
+      continue;
+    }
+    try{
+      const state=normalizeState(parsed);
+      if(key!==STORAGE_KEY)writeState(state);
+      return state;
+    }catch(e){
+      if(key===STORAGE_KEY){
+        backupCorrupt(key,raw);
+        setLoadWarning('Saved progress was invalid and has been backed up. Starting fresh.');
+      }
+    }
+  }
+  return defaultState();
 }
 
 function writeState(st){
@@ -247,39 +306,101 @@ function writeState(st){
   catch(e){onStorageError('Could not save — storage unavailable')}
 }
 
-function load(){
-  const keys=[STORAGE_KEY,...LEGACY_STORAGE_KEYS];
-  for(const key of keys){
-    const raw=readKey(key);
-    if(raw===null)continue;
-    try{
-      const state=normalizeState(raw);
-      if(key!==STORAGE_KEY)writeState(state);
-      return state;
-    }catch(e){}
-  }
-  return defaultState();
+let state=null;
+let undoSnapshot=null;
+
+function ensureState(){
+  if(state===null)state=load();
+}
+
+export function canUndo(){
+  ensureState();
+  return state.mode!=='community'&&undoSnapshot!==null;
+}
+
+export function snapshot(label=''){
+  ensureState();
+  if(state.mode==='community')return;
+  undoSnapshot={state:JSON.parse(JSON.stringify(state)),label};
+}
+
+export function undo(){
+  ensureState();
+  if(!canUndo())return null;
+  const snap=undoSnapshot;
+  undoSnapshot=null;
+  state=normalizeState(snap.state);
+  save();
+  return state;
 }
 
 export function save(){writeState(state)}
+export function getState(){ensureState();return state}
+export function getViewState(){ensureState();return state.mode==='community'?communityDemoState():state}
 
-let state=load();
-export function getState(){return state}
-export function getViewState(){return state.mode==='community'?communityDemoState():state}
-export function replaceState(next){state=next;save()}
-export function importState(raw){state=normalizeState(raw);save();return state}
+export function replaceState(next){
+  ensureState();
+  const normalized=normalizeState(next);
+  snapshot('replaceState');
+  state=normalized;
+  save();
+}
 
-export function setMode(mode){state.mode=mode;save()}
-export function setOverride(badgeId,status){state.overrides[badgeId]=status;save()}
-export function clearOverride(badgeId){delete state.overrides[badgeId];save()}
-export function setNote(badgeId,note){state.notes[badgeId]=note;save()}
-export function resetAll(){state=defaultState();save()}
+export function importState(raw){
+  ensureState();
+  const next=normalizeState(raw);
+  snapshot('importState');
+  state=next;
+  save();
+  return state;
+}
+
+// Test-only: reset module state for testing corrupt storage scenarios
+export function __resetForTest(){
+  state=null;
+  loadWarning=null;
+  undoSnapshot=null;
+}
+
+export function setMode(mode){
+  ensureState();
+  if(state.mode!==mode){
+    undoSnapshot=null;
+    state.mode=mode;
+    save();
+  }
+}
+
+export function setOverride(badgeId,status){
+  ensureState();
+  snapshot('setOverride');
+  state.overrides[badgeId]=status;
+  save();
+}
+
+export function clearOverride(badgeId){
+  ensureState();
+  snapshot('clearOverride');
+  delete state.overrides[badgeId];
+  save();
+}
+
+export function setNote(badgeId,note){ensureState();state.notes[badgeId]=note;save()}
+
+export function resetAll(){
+  ensureState();
+  snapshot('resetAll');
+  state=defaultState();
+  save();
+}
 
 export function logStreak(key,today=todayStr()){
+  ensureState();
   if(!STREAK_KEYS.includes(key))return null;
   const last=state.streaks[key]?state.streaks[key].last:null;
   if(last&&daysBetween(last,today)<1)return null;
   if(hasActivity(state.activityLog,today,key))return null;
+  snapshot('logStreak');
   state.activityLog=writeActivity(state.activityLog,today,key);
   state.streaks=rebuildStreaks(state.activityLog,state.streaks);
   save();
@@ -287,7 +408,9 @@ export function logStreak(key,today=todayStr()){
 }
 
 export function resetStreak(key){
+  ensureState();
   if(!STREAK_KEYS.includes(key))return;
+  snapshot('resetStreak');
   const longest=state.streaks[key]?state.streaks[key].longest:0;
   state.activityLog=clearActivity(state.activityLog,key);
   state.streaks[key]={...emptyStreak(),longest};
@@ -295,11 +418,13 @@ export function resetStreak(key){
 }
 
 export function logWeek(key,today=todayStr()){
+  ensureState();
   if(!WEEK_KEYS.includes(key))return null;
   const week=weekKeyOf(today);
   if(!week)return null;
   if(state.weekly[key]&&state.weekly[key].weeks.includes(week))return null;
   if(logHasWeek(state.activityLog,key,week))return null;
+  snapshot('logWeek');
   state.activityLog=writeActivity(state.activityLog,today,key);
   state.weekly=rebuildWeekly(state.activityLog,state.weekly);
   save();
@@ -307,7 +432,9 @@ export function logWeek(key,today=todayStr()){
 }
 
 export function resetWeek(key){
+  ensureState();
   if(!WEEK_KEYS.includes(key))return;
+  snapshot('resetWeek');
   const longest=state.weekly[key]?state.weekly[key].longest:0;
   state.activityLog=clearActivity(state.activityLog,key);
   state.weekly[key]={weeks:[],longest};
@@ -324,6 +451,7 @@ export function storageInfo(){
   const legacy=LEGACY_STORAGE_KEYS.filter(k=>{
     try{return localStorage.getItem(k)!==null}catch(e){return false}
   });
-  return {key:STORAGE_KEY,bytes,version:STATE_VERSION,legacy};
+  const corrupt=listCorruptKeys();
+  return {key:STORAGE_KEY,bytes,version:STATE_VERSION,legacy,corrupt};
 }
 

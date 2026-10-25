@@ -1,11 +1,15 @@
 import {BADGES,SL} from '../data/badges.js';
 import {SOURCES} from '../data/sources.js';
 import {statusOf} from '../domain/status.js';
-import {getViewState,setOverride,clearOverride,setNote} from '../domain/store.js';
+import {getViewState,getState,setOverride,clearOverride,setNote,undo} from '../domain/store.js';
 import {todayStr} from '../domain/dates.js';
 import {streakView,weekView} from '../domain/activity.js';
 import {estimateMinutes,nextActionForBadge} from '../domain/quest.js';
+import {cloneState} from '../domain/celebrate.js';
 import {render} from './render.js';
+import {toast} from './toast.js';
+import {celebrateAchievements} from './celebrate.js';
+import {esc} from './escape.js';
 
 const srcById=id=>SOURCES.find(x=>x.id===id);
 
@@ -89,13 +93,38 @@ function communitySynthesisHTML(b){
     ${b.sources.map(viewSourceHTML).join('')}`;
 }
 
+let lastFocusedElement=null;
+let currentBadgeId=null;
+
+function setInert(inert){
+  const top=document.querySelector('header.top');
+  const main=document.querySelector('main.wrap');
+  if(inert){
+    if(top)top.setAttribute('inert','');
+    if(main)main.setAttribute('inert','');
+  }else{
+    if(top)top.removeAttribute('inert');
+    if(main)main.removeAttribute('inert');
+  }
+}
+
 export function openDrawer(id){
   const b=BADGES.find(x=>x.id===id); if(!b)return;
+  const drawer=document.getElementById('drawer');
+  if(!drawer)return;
+
+  const wasOpen=drawer.classList.contains('open');
+  if(!wasOpen){
+    lastFocusedElement=document.activeElement;
+    setInert(true);
+  }
+  currentBadgeId=id;
+
   const s=getViewState();
   const readOnly=s.mode==='community';
   const today=todayStr();
   const st=statusOf(b,s,today);
-  document.getElementById('drawer').innerHTML=`
+  drawer.innerHTML=`
     <div class="drawer-head"><div><h3>${b.name}</h3><div class="ph mono">#${String(b.n).padStart(2,'0')} · ${b.phase}</div></div><button class="close-x" id="closeDrawer" aria-label="Close">✕</button></div>
     <label>AWS requirement</label>
     ${awsRequirementHTML(b)}
@@ -114,21 +143,112 @@ export function openDrawer(id){
     <label>Next action</label>
     ${nextActionHTML(b,s,today)}
     <label for="noteArea">My notes</label>
-    <textarea id="noteArea" placeholder="e.g. commented on X, article published Sep 29..."${readOnly?' readonly':''}>${s.notes[b.id]||''}</textarea>
+    <textarea id="noteArea" placeholder="e.g. commented on X, article published Sep 29..."${readOnly?' readonly':''}>${esc(s.notes[b.id]||'')}</textarea>
   `;
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('drawer').classList.add('open');
-  document.getElementById('closeDrawer').onclick=closeDrawer;
-  document.getElementById('closeDrawer').focus();
-  document.querySelectorAll('[data-setstatus]').forEach(btn=>btn.onclick=()=>{
+  document.getElementById('overlay')?.classList.add('open');
+  drawer.classList.add('open');
+  const closeBtn=document.getElementById('closeDrawer');
+  if(closeBtn){
+    closeBtn.onclick=closeDrawer;
+    closeBtn.focus();
+  }
+  drawer.querySelectorAll('[data-setstatus]').forEach(btn=>btn.onclick=()=>{
     const v=btn.dataset.setstatus;
+    const before=cloneState(getState());
     if(v==='clear') clearOverride(b.id); else setOverride(b.id,v);
-    render();openDrawer(id);
+    render();
+    openDrawer(id);
+    celebrateAchievements(before,getState(),v==='clear'?'Override cleared':`Status set to ${v==='not_started'?'Not started':v}`,{
+      label:'Undo',
+      onClick:()=>{
+        undo();
+        render();
+        const d=document.getElementById('drawer');
+        if(d&&d.classList.contains('open')) openDrawer(id);
+        toast('Override undone');
+      }
+    });
   });
-  document.getElementById('noteArea').oninput=(e)=>{setNote(b.id,e.target.value);};
+  const noteArea=document.getElementById('noteArea');
+  if(noteArea){
+    noteArea.oninput=(e)=>{setNote(b.id,e.target.value);};
+  }
 }
 
-export function closeDrawer(){
-  document.getElementById('overlay').classList.remove('open');
-  document.getElementById('drawer').classList.remove('open');
+export function closeDrawer(opts={}){
+  const drawer=document.getElementById('drawer');
+  if(!drawer)return;
+  document.getElementById('overlay')?.classList.remove('open');
+  drawer.classList.remove('open');
+  setInert(false);
+
+  const restoreFocus=opts&&typeof opts==='object'&&'restoreFocus' in opts?Boolean(opts.restoreFocus):true;
+  if(restoreFocus){
+    if(lastFocusedElement&&document.body.contains(lastFocusedElement)){
+      lastFocusedElement.focus();
+    }else if(currentBadgeId){
+      const opener=document.querySelector(`[data-open="${currentBadgeId}"]`);
+      if(opener)opener.focus();
+    }
+  }
+  lastFocusedElement=null;
+}
+
+function getFocusableElements(container){
+  const selector='button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  return Array.from(container.querySelectorAll(selector)).filter(el=>{
+    return el.offsetWidth>0||el.offsetHeight>0||el.getClientRects().length>0;
+  });
+}
+
+function handleDrawerKeydown(e){
+  const drawer=document.getElementById('drawer');
+  if(!drawer||!drawer.classList.contains('open'))return;
+
+  if(e.key==='Escape'){
+    e.preventDefault();
+    closeDrawer();
+    return;
+  }
+
+  if(e.key==='Tab'){
+    const focusables=getFocusableElements(drawer);
+    if(focusables.length===0){
+      e.preventDefault();
+      return;
+    }
+    const first=focusables[0];
+    const last=focusables[focusables.length-1];
+
+    if(e.shiftKey){
+      if(document.activeElement===first||!drawer.contains(document.activeElement)){
+        e.preventDefault();
+        last.focus();
+      }
+    }else{
+      if(document.activeElement===last||!drawer.contains(document.activeElement)){
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    return;
+  }
+
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){
+    const tag=(e.target&&e.target.tagName)?e.target.tagName.toLowerCase():'';
+    if(tag==='textarea'||tag==='input'||(e.target&&e.target.isContentEditable))return;
+
+    const idx=BADGES.findIndex(x=>x.id===currentBadgeId);
+    if(idx!==-1){
+      e.preventDefault();
+      const nextIdx=e.key==='ArrowRight'
+        ?(idx+1)%BADGES.length
+        :(idx-1+BADGES.length)%BADGES.length;
+      openDrawer(BADGES[nextIdx].id);
+    }
+  }
+}
+
+if(typeof document!=='undefined'){
+  document.addEventListener('keydown',handleDrawerKeydown);
 }
