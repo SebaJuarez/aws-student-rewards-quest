@@ -1,9 +1,10 @@
 import {WL} from '../../data/badges.js';
-import {formatDate,todayStr,weekKeyOf} from '../../domain/dates.js';
+import {formatDate,todayStr} from '../../domain/dates.js';
 import {
-  ACTIVITY_KEYS,WEEKLY_LOG_KEYS,activitySummary,heatmapModel
+  ACTIVITY_KEYS,activitySummary,heatmapModel,personalRecords
 } from '../../domain/activityLog.js';
 import {dayNumber} from '../../domain/progress.js';
+import {buildQuickLogPills} from './quicklog.js';
 
 const SHORT={signin:'Sign-in',like:'Like',comment:'Comment',wishVote:'Wish',articlePublish:'Article'};
 const WEEKDAY_LABELS=['Mon','','Wed','','Fri','',''];
@@ -37,7 +38,7 @@ function cellHTML(cell,view){
   if(cell.milestone)parts.push(cell.milestone);
   if(cell.lost.length)parts.push(`${listDays(cell.lost)} streak lost`);
   if(cell.risk)parts.push('streak at risk');
-  return `<button type="button" class="${cls.join(' ')}" data-heat="${cell.date}" data-day="${day===null?'':day}" data-keys="${cell.keys.join(',')}"${cell.milestone?` data-milestone="${cell.milestone}"`:''}${cell.lost.length?` data-lost="${cell.lost.join(',')}"`:''}${cell.risk?' data-risk="1"':''} aria-pressed="${sel?'true':'false'}" aria-label="${parts.join(', ')}">${glyph}</button>`;
+  return `<button type="button" class="${cls.join(' ')}" data-heat="${cell.date}" data-day="${day===null?'':day}" data-keys="${cell.keys.join(',')}"${cell.milestone?` data-milestone="${cell.milestone}"`:''}${cell.lost.length?` data-lost="${cell.lost.join(',')}"`:''}${cell.risk?' data-risk="1"':''} tabindex="${sel?'0':'-1'}" aria-pressed="${sel?'true':'false'}" aria-label="${parts.join(', ')}">${glyph}</button>`;
 }
 
 function detailHTML(o){
@@ -60,6 +61,7 @@ export function selectHeatDay(cell){
   wrap.querySelectorAll('[data-heat]').forEach((c)=>{
     const on=c.dataset.heat===selectedDay;
     c.setAttribute('aria-pressed',on?'true':'false');
+    c.setAttribute('tabindex',on?'0':'-1');
     c.classList.toggle('sel',on);
   });
   const detail=document.getElementById('heatDetail');
@@ -76,10 +78,9 @@ export function selectHeatDay(cell){
 
 export function renderActivity(view){
   const today=todayStr();
-  const readOnly=view.mode==='community';
   const sum=activitySummary(view,today);
   const heat=heatmapModel(view,today);
-  const week=weekKeyOf(today);
+  const rec=personalRecords(view);
 
   if(!selectedDay||!heat.byDate[selectedDay])selectedDay=today;
   const selected=heat.byDate[selectedDay];
@@ -99,15 +100,7 @@ export function renderActivity(view){
     ${chip('Active days',sum.activeDays)}
   </div>`;
 
-  const pills=ACTIVITY_KEYS.map((key)=>{
-    const doneToday=sum.today.keys.includes(key);
-    const weekly=WEEKLY_LOG_KEYS.includes(key);
-    const doneWeek=weekly&&((view.weekly&&view.weekly[key]&&view.weekly[key].weeks)||[]).includes(week);
-    if(doneToday)return `<span class="apill on"><i aria-hidden="true">&#10003;</i>${label(key)}</span>`;
-    if(doneWeek)return `<span class="apill on week"><i aria-hidden="true">&#10003;</i>${label(key)}<em>this week</em></span>`;
-    if(readOnly)return `<span class="apill"><i aria-hidden="true">&#9675;</i>${label(key)}</span>`;
-    return `<button type="button" class="apill act" data-${weekly?'logweek':'log'}="${key}"><i aria-hidden="true">&#9675;</i>${label(key)}<em>${weekly?'log week':'log'}</em></button>`;
-  }).join('');
+  const pills=buildQuickLogPills(view,today);
 
   const todayBlock=`<div class="act-today">
     <div class="act-today-head"><span class="mono">${formatDate(today)}</span><span class="mono">${sum.today.keys.length} of ${ACTIVITY_KEYS.length} activities today</span></div>
@@ -135,23 +128,50 @@ export function renderActivity(view){
   </div>`;
   const heatBlock=`<div class="heat-wrap">
     <div class="heat-scroll">
-      <div class="heat" role="group" aria-label="Last 90 days of activity">${labels}${columns}</div>
+      <div class="heat" role="group" aria-label="Last 90 days of activity (use Arrow keys to navigate)">${labels}${columns}</div>
     </div>
     <div class="heat-detail" id="heatDetail" aria-live="polite">${selDetail}</div>
     ${legend}
   </div>`;
 
+  const recordsBlock=`<div class="rec-grid">
+    <div class="rec-card"><div class="rec-k">Best Sign-in Streak</div><div class="rec-v mono">${rec.longest.signin}d</div></div>
+    <div class="rec-card"><div class="rec-k">Best Like Streak</div><div class="rec-v mono">${rec.longest.like}d</div></div>
+    <div class="rec-card"><div class="rec-k">Best Comment Streak</div><div class="rec-v mono">${rec.longest.comment}d</div></div>
+    <div class="rec-card"><div class="rec-k">Best Wish Streak</div><div class="rec-v mono">${rec.longest.wishVote}w</div></div>
+    <div class="rec-card"><div class="rec-k">Best Article Streak</div><div class="rec-v mono">${rec.longest.articlePublish}w</div></div>
+    <div class="rec-card"><div class="rec-k">Best Week</div><div class="rec-v mono">${rec.bestWeek?`${rec.bestWeek.week} (${rec.bestWeek.count} acts)`:'—'}</div></div>
+  </div>`;
+
   const totals=`<div class="apills">${ACTIVITY_KEYS.map((k)=>`<span class="apill"><i class="n mono">${sum.totals[k]}</i>${label(k)}</span>`).join('')}</div>`;
 
-  const recent=sum.recent.length
-    ? `<ul class="act-recent">${sum.recent.map((d)=>`<li><span class="mono">${formatDate(d.date)}</span><span class="act-tags">${d.keys.map((k)=>`<span class="act-tag">${label(k)}</span>`).join('')}</span></li>`).join('')}</ul>`
-    : `<div class="quest-empty">No activity recorded yet - log today from the buttons above; nothing is backfilled.</div>`;
+  let recentHTML='';
+  if(!sum.recent.length){
+    recentHTML=`<div class="quest-empty">No activity recorded yet - log today from the buttons above; nothing is backfilled.</div>`;
+  }else{
+    const primaryRecent=sum.recent.slice(0,7);
+    const extraRecent=sum.recent.slice(7);
+    const renderList=(items)=>`<ul class="act-recent">${items.map((d)=>`<li><span class="mono">${formatDate(d.date)}</span><span class="act-tags">${d.keys.map((k)=>`<span class="act-tag">${label(k)}</span>`).join('')}</span></li>`).join('')}</ul>`;
+    
+    recentHTML=renderList(primaryRecent);
+    if(extraRecent.length){
+      recentHTML+=`<details class="act-more" data-key="act-more-history">
+        <summary>Show older activity (${extraRecent.length} more)</summary>
+        ${renderList(extraRecent)}
+      </details>`;
+    }
+  }
 
   document.getElementById('activity').innerHTML=`${stats}
     <h3 class="sub-h">Today</h3>${todayBlock}
+    <h3 class="sub-h">Daily Streaks <span class="h2-note">— 90-day targets</span></h3>
+    <div class="streak-grid" id="streaks"></div>
+    <h3 class="sub-h">Weekly Streaks <span class="h2-note">— ISO calendar weeks</span></h3>
+    <div class="streak-grid" id="weekly"></div>
+    <h3 class="sub-h">Personal Records <span class="h2-note">— all-time bests</span></h3>${recordsBlock}
     <h3 class="sub-h">Last 7 days</h3>
     <div class="act-grid">${head}${rows}</div>
     <h3 class="sub-h">Last 90 days</h3>${heatBlock}
     <h3 class="sub-h">Totals</h3>${totals}
-    <h3 class="sub-h">Recent activity</h3>${recent}`;
+    <h3 class="sub-h">Recent activity</h3>${recentHTML}`;
 }

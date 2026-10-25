@@ -250,3 +250,39 @@ test('activeDaysInRange counts days with any activity inside an inclusive range'
   assert.equal(activeDaysInRange(null,'2026-09-18','2026-09-25'),0);
   assert.equal(activeDaysInRange({},null,'2026-09-25'),0);
 });
+
+
+test('personalRecords extracts best streaks and best week', async () => {
+  const {personalRecords} = await import('../src/domain/activityLog.js');
+  const state = {
+    streaks: {
+      signin: { longest: 35 },
+      like: { longest: 12 },
+      comment: { longest: 7 }
+    },
+    weekly: {
+      wishVote: { longest: 4 },
+      articlePublish: { longest: 2 }
+    },
+    activityLog: {
+      '2026-09-20': { signin: true, like: true },
+      '2026-09-21': { signin: true },
+      '2026-09-22': { signin: true, like: true, comment: true }
+    }
+  };
+  const res = personalRecords(state);
+  assert.equal(res.longest.signin, 35);
+  assert.equal(res.longest.like, 12);
+  assert.equal(res.longest.comment, 7);
+  assert.equal(res.longest.wishVote, 4);
+  assert.equal(res.longest.articlePublish, 2);
+  assert.equal(res.totalActiveDays, 3);
+  assert.equal(res.totalActivities, 6);
+  assert.ok(res.bestWeek);
+  assert.equal(res.bestWeek.count, 4);
+
+  const empty = personalRecords(null);
+  assert.equal(empty.longest.signin, 0);
+  assert.equal(empty.bestWeek, null);
+  assert.equal(empty.totalActiveDays, 0);
+});

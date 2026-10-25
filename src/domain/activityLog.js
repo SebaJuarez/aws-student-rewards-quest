@@ -233,3 +233,41 @@ export function heatmapModel(s,today=todayStr()){
 
   return {start,today,window:HEAT_WINDOW,columns,byDate};
 }
+
+
+export function personalRecords(s){
+  const state=s||{};
+  const streaks=state.streaks||{};
+  const weekly=state.weekly||{};
+  const log=state.activityLog||{};
+
+  const longest={
+    signin:Number(streaks.signin?.longest)||0,
+    like:Number(streaks.like?.longest)||0,
+    comment:Number(streaks.comment?.longest)||0,
+    wishVote:Number(weekly.wishVote?.longest)||0,
+    articlePublish:Number(weekly.articlePublish?.longest)||0
+  };
+
+  const weekCounts={};
+  for(const date of Object.keys(log)){
+    const w=weekKeyOf(date);
+    if(!w)continue;
+    const count=dayKeys(log,date).length;
+    weekCounts[w]=(weekCounts[w]||0)+count;
+  }
+
+  let bestWeek=null;
+  for(const [w,count] of Object.entries(weekCounts)){
+    if(!bestWeek||count>bestWeek.count){
+      bestWeek={week:w,count};
+    }
+  }
+
+  return {
+    longest,
+    bestWeek,
+    totalActiveDays:activeDayCount(log),
+    totalActivities:countActivities(log)
+  };
+}
