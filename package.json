@@ -5,6 +5,26 @@
   "description": "Local-first gamified tracker for the AWS Builder Center Student Rewards badge program (independent community project).",
   "type": "module",
   "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SebaJuarez/aws-student-rewards-quest.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SebaJuarez/aws-student-rewards-quest/issues"
+  },
+  "homepage": "https://sebajuarez.github.io/aws-student-rewards-quest/",
+  "keywords": [
+    "aws",
+    "student-rewards",
+    "badge-tracker",
+    "gamification",
+    "local-first",
+    "vanilla-js"
+  ],
+  "author": "TODO: add author name and email",
   "scripts": {
     "test": "node --test \"tests/*.test.js\"",
     "serve": "npx serve ."
