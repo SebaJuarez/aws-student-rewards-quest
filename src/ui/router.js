@@ -17,7 +17,22 @@ export function parseHash(hash){
 }
 
 export function viewHref(view,query){
-  const q=query?`?${query}`:'';
+  let q='';
+  if(query){
+    if(typeof query==='string'){
+      q=query?(query.startsWith('?')?query:`?${query}`):'';
+    }else if(query instanceof URLSearchParams){
+      const s=query.toString();
+      q=s?`?${s}`:'';
+    }else if(typeof query==='object'){
+      const params=new URLSearchParams();
+      for(const [k,v] of Object.entries(query)){
+        if(v!=null&&v!=='')params.set(k,v);
+      }
+      const s=params.toString();
+      q=s?`?${s}`:'';
+    }
+  }
   return `#/${VIEWS.includes(view)?view:DEFAULT_VIEW}${q}`;
 }
 
