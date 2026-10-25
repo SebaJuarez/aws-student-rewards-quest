@@ -23,7 +23,7 @@ jobs:
     name: Test Node ${{ matrix.node-version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Setup Node ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
@@ -39,7 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
       - name: Prepare site
         run: |
           mkdir -p _site
