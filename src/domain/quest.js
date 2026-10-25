@@ -51,6 +51,7 @@ function dailyAtRisk(s,today,out){
     const maxTarget=badges.length?badges[badges.length-1].target:90;
     out.push({
       id:`risk-${key}`,
+      key,
       type:'risk',
       reason:'daily-at-risk',
       priority:PRIORITY.DAILY_AT_RISK,
@@ -76,6 +77,7 @@ function longRunwayStarts(s,today,out){
     const longest=badges.length?badges[badges.length-1]:null;
     out.push({
       id:`start-${key}`,
+      key,
       type:'start',
       reason:'long-runway',
       priority:PRIORITY.LONG_START,
@@ -103,6 +105,7 @@ function weeklyWindows(s,today,out){
     const keepingRun=v.atRisk; // a live run whose current week is still open
     out.push({
       id:`weekly-${key}`,
+      key,
       type:'weekly',
       reason:'weekly-window',
       priority:PRIORITY.WEEKLY_WINDOW,
@@ -125,6 +128,7 @@ function quickWins(s,today,out){
     const minutes=/(\d+)/.exec(b.dur||'');
     out.push({
       id:`quick-${b.id}`,
+      badgeId:b.id,
       type:'quick_win',
       reason:'quick-win',
       priority:PRIORITY.QUICK_WIN,
@@ -145,6 +149,7 @@ function engagementGoals(s,today,out){
   BADGES.filter(b=>b.type==='community'&&!isDone(b,s,today)).forEach(b=>{
     out.push({
       id:`engage-${b.id}`,
+      badgeId:b.id,
       type:'engagement',
       reason:'engagement',
       priority:PRIORITY.ENGAGEMENT,

@@ -307,7 +307,7 @@ test('nextActionForBadge derives one terse step per badge from the live views',(
   assert.equal(nextActionForBadge(byId('streak-signin-7'),fresh,TODAY),'Start today');
   assert.equal(nextActionForBadge(byId('weekly-wish-vote'),fresh,TODAY),'Log this week');
   assert.equal(nextActionForBadge(byId('knowledge-seeker'),fresh,TODAY),'Open & complete');
-  assert.equal(nextActionForBadge(byId('photo-finisher'),fresh,TODAY),'—','photo-finisher ships completed in the default state');
+  assert.equal(nextActionForBadge(byId('photo-finisher'),fresh,TODAY),'Open & complete','photo-finisher is not completed by default');
   assert.equal(nextActionForBadge(byId('conversation-starter'),fresh,TODAY),'Open & track');
 
   const risk=stateWith({completed:{},streaks:{comment:atRisk(14)}});
@@ -337,6 +337,19 @@ test('nextActionForBadge derives one terse step per badge from the live views',(
       const a=nextActionForBadge(b,s,TODAY);
       assert.ok(typeof a==='string'&&a.length>0,`${b.id} needs a next action`);
       assert.ok(!banned.test(a),`${b.id} action speaks as a mandate`);
+    }
+  }
+});
+
+test('actions expose activity keys and badgeIds for UI CTA binding',()=>{
+  const s=defaultState();
+  const acts=getNextBestActions(s,TODAY);
+  for(const a of acts){
+    if(a.type==='risk'||a.type==='start'||a.type==='weekly'){
+      assert.ok(typeof a.key==='string'&&a.key.length>0,`${a.id} should expose key`);
+    }
+    if(a.type==='quick_win'||a.type==='engagement'){
+      assert.ok(typeof a.badgeId==='string'&&a.badgeId.length>0,`${a.id} should expose badgeId`);
     }
   }
 });
