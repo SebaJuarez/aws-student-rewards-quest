@@ -44,6 +44,8 @@ jobs:
         run: |
           mkdir -p _site
           cp index.html _site/
+          cp manifest.webmanifest _site/
+          cp sw.js _site/
           cp -r src _site/
           cp -r docs _site/
           touch _site/.nojekyll
